@@ -5,6 +5,8 @@ Building off of the core application from the [CHIME model](https://github.com/C
 
 Documentation of parameter choices and model choices can be found in the github Wiki.  For questions, please email ganaya@buffalo.edu or sarahmul@buffalo.edu.  
 
+The application can be found [here](https://khcovid19.herokuapp.com).
+
 ## Development
 To test the app locally just run:
 
