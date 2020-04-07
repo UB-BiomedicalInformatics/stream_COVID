@@ -44,3 +44,8 @@ port, then set `PORT` in the `.env` file.
 
 ## Deployment
 **Before you push your changes to master make sure that everything works in development mode.**
+
+## Acknowledgements
+
+This work has been supported in part by grants from NIH NLM T15LM012495, NIAA R21AA026954, and NCATS UL1TR001412.
+
