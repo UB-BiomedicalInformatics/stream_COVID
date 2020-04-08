@@ -104,14 +104,6 @@ def build_admissions_df(
     )
     projection = pd.DataFrame.from_dict(data_dict)
     
-    counter = 0
-    for i in hosp_list:
-        projection[groups[0]+"_"+i] = projection.hosp*bed_share.iloc[3,counter]
-        projection[groups[1]+"_"+i] = projection.icu*bed_share.iloc[3,counter]
-        projection[groups[2]+"_"+i] = projection.vent*bed_share.iloc[3,counter]
-        counter +=1
-        if counter == 4: break
-    
     # New cases
     projection_admits = projection.iloc[:-1, :] - projection.shift(1)
     projection_admits["day"] = range(projection_admits.shape[0])
@@ -123,10 +115,6 @@ def build_census_df(
     #n_days = np.shape(projection_admits)[0]
     los_dict = {
     "hosp": hosp_los, "icu": icu_los, "vent": vent_los,
-    "hosp_kh": hosp_los, "icu_kh": icu_los, "vent_kh": vent_los,
-    "hosp_ecmc": hosp_los, "icu_ecmc": icu_los, "vent_ecmc": vent_los,
-    "hosp_chs": hosp_los, "icu_chs": icu_los, "vent_chs": vent_los,
-    "hosp_rpci": hosp_los, "icu_rpci": icu_los, "vent_rpci": vent_los
     }
 
     census_dict = dict()
@@ -139,11 +127,7 @@ def build_census_df(
 
     census_df = pd.DataFrame(census_dict)
     census_df["day"] = census_df.index
-    census_df = census_df[["day", "hosp", "icu", "vent", 
-    "hosp_kh", "icu_kh", "vent_kh", 
-    "hosp_ecmc", "icu_ecmc", "vent_ecmc",
-    "hosp_chs", "icu_chs", "vent_chs",
-    "hosp_rpci", "icu_rpci", "vent_rpci"
+    census_df = census_df[["day", "hosp", "icu", "vent"
     ]]
     
     census_df['total_county_icu'] = icu_county
@@ -152,15 +136,6 @@ def build_census_df(
     census_df['expanded_beds_county'] = expanded_beds_county_05
     census_df['expanded_icu_county2'] = expanded_icu_county_1
     census_df['expanded_beds_county2'] = expanded_beds_county_1
-    census_df['icu_beds'] = icu_val
-    census_df['total_beds'] = total_beds_val
-    census_df['total_vents'] = vent_val
-    census_df['expanded_beds'] = expanded_beds_val
-    census_df['expanded_icu_beds'] = expanded_icu_val
-    census_df['expanded_vent_beds'] = expanded_vent_val
-    census_df['expanded_beds2'] = expanded_beds2_val
-    census_df['expanded_icu_beds2'] = expanded_icu2_val
-    census_df['expanded_vent_beds2'] = expanded_vent2_val
     
     # PPE for hosp/icu
     census_df['ppe_mild_d'] = census_df['hosp'] * ppe_mild_val_lower
@@ -169,14 +144,6 @@ def build_census_df(
     census_df['ppe_severe_u'] = census_df['icu'] * ppe_severe_val_upper
     census_df['ppe_mean_mild'] = census_df[["ppe_mild_d","ppe_mild_u"]].mean(axis=1)
     census_df['ppe_mean_severe'] = census_df[["ppe_severe_d","ppe_severe_u"]].mean(axis=1)
-    
-    for hosp in hosp_list:
-        census_df['ppe_mild_d_'+hosp] = census_df['hosp_'+hosp] * ppe_mild_val_lower
-        census_df['ppe_mild_u_'+hosp] = census_df['hosp_'+hosp] * ppe_mild_val_upper
-        census_df['ppe_severe_d_'+hosp] = census_df['icu_'+hosp] * ppe_severe_val_lower
-        census_df['ppe_severe_u_'+hosp] = census_df['icu_'+hosp] * ppe_severe_val_upper
-        census_df['ppe_mean_mild_'+hosp] = census_df[["ppe_mild_d_"+hosp,"ppe_mild_u_"+hosp]].mean(axis=1)
-        census_df['ppe_mean_severe_'+hosp] = census_df[["ppe_severe_d_"+hosp,"ppe_severe_u_"+hosp]].mean(axis=1)
     
     census_df = census_df.head(n_days-10)
     
@@ -515,39 +482,25 @@ ppe_mild_val_upper = 15
 ppe_severe_val_lower = 15
 ppe_severe_val_upper = 24
 
-# List of Hospitals
-hosp_list = ['kh', 'ecmc', 'chs', 'rpci']
+#
 groups = ['hosp', 'icu', 'vent']
 
-# Hospital Bed Sharing Percentage
-# ignore the first 3 numbers
-data = {
-    'Kaleida' : [0.34, 0.34, 0.26, 0.38],
-    'ECMC': [0.14, 0.20, 0.17, 0.23], 
-    'CHS': [0.21, 0.17, 0.18, 0.33],
-    'RPCI': [0.0, 0.09, 0.06, 0.05]
-}
-bed_share = pd.DataFrame(data)
-
 # Load erie county data
-url = "https://raw.githubusercontent.com/gabai/stream_KH/master/Cases_Erie.csv"
+url = "https://raw.githubusercontent.com/UB-BiomedicalInformatics/stream_COVID/master/Cases_Erie.csv"
 erie_df = pd.read_csv(url)
 erie_df['Date'] = pd.to_datetime(erie_df['Date'])
 
 # Populations and Infections
 erie = 1500000
-cases_erie = 1059
+cases_erie = 1235
 S_default = erie
-known_infections = 1059
-known_cases = 214
+known_infections = 1235
+known_cases = 221
 regional_hosp_share = 1.0
 S = erie
 
 
 # Widgets
-hosp_options = st.sidebar.radio(
-    "Hospitals Systems", ('Kaleida', 'ECMC', 'CHS', 'RPCI'))
-    
 model_options = st.sidebar.radio(
     "Service", ('Inpatient', 'ICU', 'Ventilated'))
 
@@ -603,11 +556,11 @@ hosp_los = st.sidebar.number_input("Hospital Length of Stay", value=10, step=1, 
 icu_los = st.sidebar.number_input("ICU Length of Stay", value=11, step=1, format="%i")
 vent_los = st.sidebar.number_input("Ventilator Length of Stay", value=6, step=1, format="%i")
 
-# regional_hosp_share = (
-   # st.sidebar.number_input(
-       # "Hospital Bed Share (%)", 0.0, 100.0, value=100.0, step=1.0, format="%f")
-   # / 100.0
-# )
+regional_hosp_share = (
+   st.sidebar.number_input(
+       "Hospital Bed Share (%)", 0.0, 100.0, value=100.0, step=1.0, format="%f")
+   / 100.0
+)
 
 S = st.sidebar.number_input(
   "Regional Population", value=S_default, step=100000, format="%i")
@@ -617,9 +570,6 @@ initial_infections = st.sidebar.number_input(
 
 total_infections = current_hosp / regional_hosp_share / hosp_rate
 detection_prob = initial_infections / total_infections
-
-
-#S, I, R = S, initial_infections / detection_prob, 0
 
 intrinsic_growth_rate = 2 ** (1 / doubling_time) - 1
 # (0.12 + 0.07)/
@@ -660,78 +610,8 @@ beta4 = (
 gamma_hosp = 1 / hosp_los
 icu_days = 1 / icu_los
 
-st.title("Great Lakes Healthcare COVID-19 Disease Model - Erie County, NY")
-# st.markdown(
-    # """*This tool was initially developed by the [Predictive Healthcare team](http://predictivehealthcare.pennmedicine.org/) at
-# Penn Medicine and has been modified for our community. 
-
-# We have modified the model to include:
-# - "Exposure", creating a SEIR model. 
-# - We present distribution of cases by each hospital based on bed-share percentage.
-# - Protective Equipment Equipment needs for Erie County, NY.
-
-# For questions about this page, contact ganaya@buffalo.edu. """)
-
-
-# st.markdown(
-    # """
-# The first graph includes the COVID-19 cases in Erie County, NY. A county wide and hospital based analysis using both SIR and SEIR models is presented afterwards. 
-# Each Hospital is represented as a percent from the total bed-share distribution (CCU, ICU, MedSurg - Pending update of 'expanded' per hospital beds).
-
-# An initial doubling time of **{doubling_time}** days and a recovery time of **{recovery_days}** days imply an $R_0$ of 
-# **{r_naught:.2f}**.
-
-# **Mitigation**: A **{relative_contact_rate:.0%}** reduction in social contact after the onset of the 
-# outbreak reduces the doubling time to **{doubling_time_t:.1f}** days, implying an effective $R_t$ of **${r_t:.2f}$**.""".format(
-        # total_infections=total_infections,
-        # current_hosp=current_hosp,
-        # hosp_rate=hosp_rate,
-        # S=S,
-        # regional_hosp_share=regional_hosp_share,
-        # initial_infections=initial_infections,
-        # detection_prob=detection_prob,
-        # recovery_days=recovery_days,
-        # r_naught=r_naught,
-        # doubling_time=doubling_time,
-        # relative_contact_rate=relative_contact_rate,
-        # r_t=r_t,
-        # doubling_time_t=doubling_time_t
-    # )
-# )
-
-# The estimated number of currently infected individuals in Erie County is **{total_infections:.0f}**. The **{initial_infections}** 
-# confirmed cases in the region imply a **{detection_prob:.0%}** rate of detection. This is based on current inputs for 
-# Hospitalizations (**{current_hosp}**), Hospitalization rate (**{hosp_rate:.0%}**) and Region size (**{S}**). 
-# All credit goes to the PH team at Penn Medicine. We have adapted the code based on our current regional cases, county population and hospitals.
-# The **{initial_infections}** confirmed cases in the region imply a **{detection_prob:.0%}** rate of detection.
-
-#st.subheader("Cases of COVID-19 in the United States")
-# Table of cases in the US
-#st.table(us_data)
-# Table of cases in NYS
-#st.subheader("Cases of COVID-19 in New York State")
-#counties.sort_values(by=['Cases'], ascending=False)
-#st.table(ny_data)
-#st.subheader("Cases of COVID-19 in Erie County")
-
-
-# st.markdown(
-    # """Erie county has reported **{cases_erie:.0f}** cases of COVID-19.""".format(
-        # cases_erie=cases_erie 
-    # )
-
-#)
-#st.markdown(""" The charts below show the cumulative cases of total confirmed, hospitalized, critical care, and ventilator use for COVID-19 cases.""")
-
-
-
-
-
-
-
-
-
-
+###################### Main Tittle ###################
+st.title("COVID-19 Disease Model - Erie County, NY")
 
 ###################### First Graph ###################
 # Erie cases Graph
@@ -749,72 +629,12 @@ erie_icu_line = alt.Chart(erie_df).mark_line(color='orange', point=True).encode(
 # Bar graph - Removing this one to show new graph below. 
 #st.altair_chart(alt.layer(erie_cases_bar + erie_admit_line + erie_icu_line), use_container_width=True)
 
-    # st.markdown(
-        # """To project the expected impact to Erie County Hospitals, we estimate the terms of the model.
-# To do this, we use a combination of estimates from other locations, informed estimates based on logical reasoning, and best guesses from the American Hospital Association.
-# ### Parameters
-# The model's parameters, $\\beta$ and $\\gamma$, determine the virulence of the epidemic.
-# $$\\beta$$ can be interpreted as the _effective contact rate_:
-# """)
-    # st.latex("\\beta = \\tau \\times c")
-
-    # st.markdown(
-# """which is the transmissibility ($\\tau$) multiplied by the average number of people exposed ($$c$$).  The transmissibility is the basic virulence of the pathogen.  The number of people exposed $c$ is the parameter that can be changed through social distancing.
-# $\\gamma$ is the inverse of the mean recovery time, in days.  I.e.: if $\\gamma = 1/{recovery_days}$, then the average infection will clear in {recovery_days} days.
-# An important descriptive parameter is the _basic reproduction number_, or $R_0$.  This represents the average number of people who will be infected by any given infected person.  When $R_0$ is greater than 1, it means that a disease will grow.  Higher $R_0$'s imply more rapid growth.  It is defined as """.format(recovery_days=int(recovery_days)    , c='c'))
-    # st.latex("R_0 = \\beta /\\gamma")
-
-    # st.markdown("""
-# $R_0$ gets bigger when
-# - there are more contacts between people
-# - when the pathogen is more virulent
-# - when people have the pathogen for longer periods of time
-# A doubling time of {doubling_time} days and a recovery time of {recovery_days} days imply an $R_0$ of {r_naught:.2f}.
-# #### Effect of social distancing
-# After the beginning of the outbreak, actions to reduce social contact will lower the parameter $c$.  If this happens at 
-# time $t$, then the number of people infected by any given infected person is $R_t$, which will be lower than $R_0$.  
-# A {relative_contact_rate:.0%} reduction in social contact would increase the time it takes for the outbreak to double, 
-# to {doubling_time_t:.2f} days from {doubling_time:.2f} days, with a $R_t$ of {r_t:.2f}.
-# #### Using the model
-# We need to express the two parameters $\\beta$ and $\\gamma$ in terms of quantities we can estimate.
-# - $\\gamma$:  the CDC is recommending 14 days of self-quarantine, we'll use $\\gamma = 1/{recovery_days}$.
-# - To estimate $$\\beta$$ directly, we'd need to know transmissibility and social contact rates.  since we don't know these things, we can extract it from known _doubling times_.  The AHA says to expect a doubling time $T_d$ of 7-10 days. That means an early-phase rate of growth can be computed by using the doubling time formula:
-# """.format(doubling_time=doubling_time,
-           # recovery_days=recovery_days,
-           # r_naught=r_naught,
-           # relative_contact_rate=relative_contact_rate,
-           # doubling_time_t=doubling_time_t,
-           # r_t=r_t)
-    # )
-    # st.latex("g = 2^{1/T_d} - 1")
-
-    # st.markdown(
-        # """
-# - Since the rate of new infections in the SIR model is $g = \\beta S - \\gamma$, and we've already computed $\\gamma$, $\\beta$ becomes a function of the initial population size of susceptible individuals.
-# $$\\beta = (g + \\gamma)$$.
-
-# ### Initial Conditions
-
-# - The total size of the susceptible population will be the entire catchment area for Erie County.
-# - Erie = {erie}
-# - Buffalo General Hospital with 25% of bed share, calculated based on 456 CCU/ICU/MedSurg beds. Excluded MRU beds. 
-# - Erie County Medical Center with 16% of beds share, calculated based on 285 CCU/ICU/MedSurg beds. Excluded burns care, chemical dependence, pediatric, MRU, prisoner and psychiatric beds. 
-# - Mercy Hospital with 17% of bed share, calculated based on 306 CCU/ICU/MedSurg beds. Excluded maternity beds, neonatal, pediatric and MRU beds. 
-# - Millard Fillmore Suburban Hospital with 13% of bed share, calculated based on 227 CCU/ICU/MedSurg beds. Excluded maternity and neonatal beds. 
-# - Oishei Hospital Children's with 5% of bed share, calculated based on 89 ICU/MedSurg beds. Excluded bone marrow transplant beds and neonatal beds. 
-# - Roswell Park Cancer Institute with 6% of bed share, calculated based on 110 ICU/MedSurg beds. Excluded bone marrow transplant beds and pediatric beds. 
-# - Sisters of Charity Hospital with 12% of bed share, calculated based on 215 CCU/ICU/MedSurg beds. Excluded maternity, neonatal and MRU beds.
-# - Sisters of Charity St. Joeseph Hospital with 6% of beds share, calculated based on 103 CCU/ICU/MedSurg beds. """.format(
-            # erie=erie))
-
-
 # Slider and Date
 n_days = st.slider("Number of days to project", 30, 200, 120, 1, "%i")
 as_date = st.checkbox(label="Present result as dates", value=False)
 
 
 st.header("""Erie County: Reported Cases, Census and Admissions""")
-
 # Erie Graph of Cases # Lines of cases
 def erie_chart(
     projection_admits: pd.DataFrame) -> alt.Chart:
@@ -1093,99 +913,12 @@ hospitalized_D, icu_D, ventilated_D = (
 
 ## SEIJCRD model with phase adjusted R_0 and Disease Related Fatality
 
-
-
-
-# Individual hospitals selection
-if hosp_options == 'Kaleida':
-    col_name1 = {"hosp_kh": "Hospitalized - Kaleida", "icu_kh": "ICU - Kaleida", "vent_kh": "Ventilated - Kaleida"}
-    fold_name1 = ["Hospitalized - Kaleida", "ICU - Kaleida", "Ventilated - Kaleida"]
-    # Added expanded beds
-    col_name2 = {"hosp_kh": "Hospitalized - Kaleida", "icu_kh": "ICU - Kaleida", "vent_kh": "Ventilated - Kaleida", "total_beds":"Total Beds", "icu_beds": "Total ICU Beds"}
-    fold_name2 = ["Hospitalized - Kaleida", "ICU - Kaleida", "Ventilated - Kaleida", "Total Beds", "Total ICU Beds"]
-    # col_name2 = {"hosp_kh": "Hospitalized - Kaleida", "icu_kh": "ICU - Kaleida", "vent_kh": "Ventilated - Kaleida"}
-    # fold_name2 = ["Hospitalized - Kaleida", "ICU - Kaleida", "Ventilated - Kaleida"]
-    #col_name3 = {"ppe_mild_d_kh": "PPE Mild Cases - Lower Range", "ppe_mild_u_kh": "PPE Mild Cases - Upper Range", 
-    #"ppe_severe_d_kh": "PPE Severe Cases - Lower Range", "ppe_severe_u_kh": "PPE Severe Cases - Upper Range"}
-    #fold_name3 = ["PPE Mild Cases - Lower Range", "PPE Mild Cases - Upper Range", "PPE Severe Cases - Lower Range", "PPE Severe Cases - Upper Range"]
-    icu_val = 245
-    total_beds_val = 1224
-    vent_val = 206
-    expanded_beds_val = 1319
-    expanded_icu_val = 183
-    expanded_vent_val = 309
-    expanded_beds2_val = 1758
-    expanded_icu2_val = 244
-    expanded_vent2_val = 412
-if hosp_options == 'ECMC':
-    col_name1 = {"hosp_ecmc": "Hospitalized - ECMC", "icu_ecmc": "ICU - ECMC", "vent_ecmc": "Ventilated - ECMC"}
-    fold_name1 = ["Hospitalized - ECMC", "ICU - ECMC", "Ventilated - ECMC"]
-    col_name2 = {"hosp_ecmc": "Hospitalized - ECMC", "icu_ecmc": "ICU - ECMC", "vent_ecmc": "Ventilated - ECMC", "total_beds":"Total Beds", "icu_beds": "Total ICU Beds"}
-    fold_name2 = ["Hospitalized - ECMC", "ICU - ECMC", "Ventilated - ECMC", "Total Beds", "Total ICU Beds"]
-    
-    #col_name2 = {"hosp_ecmc": "Hospitalized - ECMC", "icu_ecmc": "ICU - ECMC", "vent_ecmc": "Ventilated - ECMC"}
-    #fold_name2 = ["Hospitalized - ECMC", "ICU - ECMC", "Ventilated - ECMC"]
-    # col_name3 ={"ppe_mild_d_ecmc": "PPE Mild Cases - Lower Range", "ppe_mild_u_ecmc": "PPE Mild Cases - Upper Range", 
-    # "ppe_severe_d_ecmc": "PPE Severe Cases - Lower Range", "ppe_severe_u_ecmc": "PPE Severe Cases - Upper Range"}
-    # fold_name3 = ["PPE Mild Cases - Lower Range", "PPE Mild Cases - Upper Range", "PPE Severe Cases - Lower Range", "PPE Severe Cases - Upper Range"]
-    icu_val = 46
-    total_beds_val = 518
-    vent_val = 0
-    expanded_beds_val = 860
-    expanded_icu_val = 54
-    expanded_vent_val = 0
-    expanded_beds2_val = 1146
-    expanded_icu2_val = 72
-    expanded_vent2_val = 0
-if hosp_options == 'CHS':
-    col_name1 = {"hosp_chs": "Hospitalized - CHS", "icu_chs": "ICU - CHS", "vent_chs": "Ventilated - CHS"}
-    fold_name1 = ["Hospitalized - CHS", "ICU - CHS", "Ventilated - CHS"]
-    col_name2 = {"hosp_chs": "Hospitalized - CHS", "icu_chs": "ICU - CHS", "vent_chs": "Ventilated - CHS", "total_beds":"Total Beds", "icu_beds": "Total ICU Beds"}
-    fold_name2 = ["Hospitalized - CHS", "ICU - CHS", "Ventilated - CHS", "Total Beds", "Total ICU Beds"]
-    #col_name2 = {"hosp_chs": "Hospitalized - CHS", "icu_chs": "ICU - CHS", "vent_chs": "Ventilated - CHS"}
-    #fold_name2 = ["Hospitalized - CHS", "ICU - CHS", "Ventilated - CHS"]
-    # col_name3 ={"ppe_mild_d_chs": "PPE Mild Cases - Lower Range", "ppe_mild_u_chs": "PPE Mild Cases - Upper Range", 
-    # "ppe_severe_d_chs": "PPE Severe Cases - Lower Range", "ppe_severe_u_chs": "PPE Severe Cases - Upper Range"}
-    # fold_name3 = ["PPE Mild Cases - Lower Range", "PPE Mild Cases - Upper Range", "PPE Severe Cases - Lower Range", "PPE Severe Cases - Upper Range"]
-    icu_val = 163
-    total_beds_val = 887
-    vent_val = 0
-    expanded_beds_val = 1193
-    expanded_icu_val = 111
-    expanded_vent_val = 0
-    expanded_beds2_val = 1590 
-    expanded_icu2_val = 148
-    expanded_vent2_val = 0
-if hosp_options == 'RPCI':
-    col_name1 = {"hosp_rpci": "Hospitalized - Roswell", "icu_rpci": "ICU - Roswell", "vent_rpci": "Ventilated - Roswell"}
-    fold_name1 = ["Hospitalized - Roswell", "ICU - Roswell", "Ventilated - Roswell"]
-    col_name2 = {"hosp_rpci": "Hospitalized - Roswell", "icu_rpci": "ICU - Roswell", "vent_rpci": "Ventilated - Roswell", "total_beds":"Total Beds", "icu_beds": "Total ICU Beds"}
-    fold_name2 = ["Hospitalized - Roswell", "ICU - Roswell", "Ventilated - Roswell", "Total Beds", "Total ICU Beds"]
-    #col_name2 = {"hosp_rpci": "Hospitalized - Roswell", "icu_rpci": "ICU - Roswell", "vent_rpci": "Ventilated - Roswell"}
-    #fold_name2 = ["Hospitalized - Roswell", "ICU - Roswell", "Ventilated - Roswell"]
-    # col_name3 ={"ppe_mild_d_rpci": "PPE Mild Cases - Lower Range", "ppe_mild_u_rpci": "PPE Mild Cases - Upper Range", 
-    # "ppe_severe_d_rpci": "PPE Severe Cases - Lower Range", "ppe_severe_u_rpci": "PPE Severe Cases - Upper Range"}
-    # fold_name3 = ["PPE Mild Cases - Lower Range", "PPE Mild Cases - Upper Range", "PPE Severe Cases - Lower Range", "PPE Severe Cases - Upper Range"]
-    icu_val = 14
-    total_beds_val = 133
-    vent_val = 0
-    expanded_beds_val = 200
-    expanded_icu_val = 24
-    expanded_vent_val = 0
-    expanded_beds2_val = 266
-    expanded_icu2_val = 28
-    expanded_vent2_val = 0
-    
-
-
- 
 # Graphs of new admissions for Erie
 # st.subheader("New Admissions: SIR Model")
 # st.markdown("Projected number of **daily** COVID-19 admissions for Erie County")
 
 # Projection days
 plot_projection_days = n_days - 10
-
 
 #############
 # # SIR Model
@@ -1215,25 +948,6 @@ census_table_R = build_census_df(projection_admits_R)
 projection_admits_D = build_admissions_df(dispositions_D)
 # Census Table
 census_table_D = build_census_df(projection_admits_D)
-
-
-if relative_contact_rate >= 0:
-    SD10 = relative_contact_rate + 10
-    gamma = 1 / recovery_days
-    beta = (intrinsic_growth_rate + gamma) / S * (1-SD10) # {rate based on doubling time} / {initial S}
-    r_t = beta / gamma * S # r_t is r_0 after distancing
-    r_naught = (intrinsic_growth_rate + gamma) / gamma
-    doubling_time_t = 1/np.log2(beta*S - gamma +1) # doubling time after distancing
-    projection_admits_e10 = build_admissions_df(dispositions_e)
-    census_table_e10 = build_census_df(projection_admits_e10)
-    ##################################
-    SD20 = relative_contact_rate + 20
-    gamma = 1 / recovery_days
-    beta = (intrinsic_growth_rate + gamma) / S * (1-SD20) # {rate based on doubling time} / {initial S}
-    r_t = beta / gamma * S # r_t is r_0 after distancing
-    r_naught = (intrinsic_growth_rate + gamma) / gamma
-    projection_admits_e20 = build_admissions_df(dispositions_e)
-    census_table_e20 = build_census_df(projection_admits_e20)
 
 # Erie Graph of Cases: SIR, SEIR
 # Admissions Graphs
@@ -1346,13 +1060,6 @@ def ip_chart(
     # Erie Graph of Cases: SEIR with phase adjustment with phase adjustment and case fatality
     # st.subheader("New Admissions: SEIR Model")
 
-
-
-
-
-
-
-
 ##############################
 #4/3/20 First Projection Graph - Admissions
 #############
@@ -1392,10 +1099,6 @@ seir = regional_admissions_chart(projection_admits_e, plot_projection_days, as_d
 seir_r = regional_admissions_chart(projection_admits_R, plot_projection_days, as_date=as_date)
 seir_d = regional_admissions_chart(projection_admits_D, plot_projection_days, as_date=as_date)
 
-# sir_ip = ip_chart(projection_admits, plot_projection_days, as_date=as_date)
-# seir_ip = ip_chart(projection_admits_e, plot_projection_days, as_date=as_date)
-# seir_r_ip = ip_chart(projection_admits_R, plot_projection_days, as_date=as_date)
-# seir_d_ip = ip_chart(projection_admits_D, plot_projection_days, as_date=as_date)
 
 if st.checkbox("Show Graph of Erie County Projected Admissions with Model Comparison of Social Distancing"):
     st.subheader("Projected number of **daily** COVID-19 admissions for Erie County: Model Comparison (Left: 0% Social Distancing, Right: Step-Wise Social Distancing)")
@@ -1451,99 +1154,6 @@ if st.checkbox("Show Graph of Erie County Projected Admissions with Model Compar
     
     # st.dataframe(admits_table_D)
     
-    
-
-# st.subheader("Projected number of **daily** COVID-19 admissions by Hospital: SIR model")
-# st.markdown("Distribution of regional cases based on total bed percentage (CCU/ICU/MedSurg).")
-def hospital_admissions_chart(
-    projection_admits: pd.DataFrame, 
-    plot_projection_days: int,
-    as_date:bool = False) -> alt.Chart:
-    """docstring"""
-    projection_admits = projection_admits.rename(columns=col_name1)
-    
-    tooltip_dict = {False: "day", True: "date:T"}
-    if as_date:
-        projection_admits = add_date_column(projection_admits)
-        x_kwargs = {"shorthand": "date:T", "title": "Date"}
-    else:
-        x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
-    
-    return (
-        alt
-        .Chart(projection_admits.head(plot_projection_days))
-        .transform_fold(fold=fold_name1)
-        .mark_line(point=False)
-        .encode(
-            x=alt.X(**x_kwargs),
-            y=alt.Y("value:Q", title="Daily admissions"),
-            color="key:N",
-            tooltip=[
-                tooltip_dict[as_date],
-                alt.Tooltip("value:Q", format=".0f", title="Admissions"),
-                "key:N",
-            ],
-        )
-        .interactive()
-    )
-    
-
-# By Hospital Admissions Chart - SIR
-# st.altair_chart(
-    # hospital_admissions_chart(
-        # projection_admits, plot_projection_days, as_date=as_date), 
-    # use_container_width=True)
-
-# if st.checkbox("Show Projected Admissions in tabular form:SIR"):
-    # admits_table = projection_admits[np.mod(projection_admits.index, 7) == 0].copy()
-    # admits_table["day"] = admits_table.index
-    # admits_table.index = range(admits_table.shape[0])
-    # admits_table = admits_table.fillna(0).astype(int)
-    
-    # st.dataframe(admits_table)
-
-# By Hospital Admissions Chart - SEIR model
-# st.subheader("Projected number of **daily** COVID-19 admissions by Hospital: SEIR model")
-# st.markdown("Distribution of regional cases based on total bed percentage (CCU/ICU/MedSurg).")
-# st.altair_chart(
-    # hospital_admissions_chart(
-        # projection_admits_e, plot_projection_days, as_date=as_date), 
-    # use_container_width=True)
-
-
-# By Hospital Admissions Chart - SEIR model with Phase Adjusted R_0
-# st.subheader("Projected number of **daily** COVID-19 admissions by Hospital: SEIR model with Phase Adjusted R_0")
-# st.markdown("Distribution of regional cases based on total bed percentage (CCU/ICU/MedSurg).")
-# st.altair_chart(
-    # hospital_admissions_chart(
-        # projection_admits_R, plot_projection_days, as_date=as_date), 
-    # use_container_width=True)
-    
-# if st.checkbox("Show Projected Admissions in tabular form: SEIR with Phase Adjusted R_0"):
-    # admits_table_R = projection_admits_R[np.mod(projection_admits_R.index, 7) == 0].copy()
-    # admits_table_R["day"] = admits_table_R.index
-    # admits_table_R.index = range(admits_table_R.shape[0])
-    # admits_table_R = admits_table_R.fillna(0).astype(int)
-    
-    # st.dataframe(admits_table_R)
-
-
-# if st.checkbox("Show Projected Admissions in tabular form: SEIR with Phase Adjusted R_0 and Case Fatality"):
-    # admits_table_D = projection_admits_D[np.mod(projection_admits_D.index, 7) == 0].copy()
-    # admits_table_D["day"] = admits_table_D.index
-    # admits_table_D.index = range(admits_table_D.shape[0])
-    # admits_table_D = admits_table_D.fillna(0).astype(int)
-    
-    # st.dataframe(admits_table_D)
-
-# st.subheader("Admitted Patients (Census)")
-# st.subheader("Projected **census** of COVID-19 patients for Erie County, accounting for arrivals and discharges: **SIR Model**")
-
-
-
-
-
-
 
 
 ################################################
@@ -1649,10 +1259,6 @@ seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_dat
 #seir_r_ip_c = ip_census_chart(census_table_R, plot_projection_days, as_date=as_date)
 seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
 ###
-# Added SEIR 10, 20 SD
-seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
-seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
-
 
 # st.subheader("Projected **census** of COVID-19 patients for Erie County: Model Comparison")
 
@@ -1719,109 +1325,6 @@ st.altair_chart(
         # use_container_width=True)
 
 # , scale=alt.Scale(domain=[0, 30000])
-
-
-st.header("""Hospital Specific Projected Admissions and Census""")
-# By Hospital Admissions Chart - SEIR model with Phase Adjusted R_0 and Case Fatality
-st.subheader("Projected number of **daily** COVID-19 admissions by Hospital: SEIR model with Phase Adjusted R_0 and Case Fatality")
-st.markdown("Distribution of regional cases based on total bed percentage (CCU/ICU/MedSurg).")
-
-st.altair_chart(
-    hospital_admissions_chart(
-        projection_admits_D, plot_projection_days, as_date=as_date), 
-    use_container_width=True)
-
-##########################################
-##########################################
-# Census by hospital
-def hosp_admitted_patients_chart(
-    census: pd.DataFrame, 
-    as_date:bool = False) -> alt.Chart:
-    """docstring"""
-    census = census.rename(columns=dict(col_name2))
-
-    tooltip_dict = {False: "day", True: "date:T"}
-    if as_date:
-        census = add_date_column(census)
-        x_kwargs = {"shorthand": "date:T", "title": "Date"}
-    else:
-        x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
-
-    return (
-        alt
-        .Chart(census)
-        .transform_fold(fold=fold_name2)
-        .mark_line(point=False)
-        .encode(
-            x=alt.X(**x_kwargs),
-            y=alt.Y("value:Q", title="Census"),
-            color="key:N",
-            tooltip=[
-                tooltip_dict[as_date],
-                alt.Tooltip("value:Q", format=".0f"),
-                "key:N",
-            ],
-        )
-        .interactive()
-    )
-
-
-# Projected Hospital census SIR Model
-# st.subheader("Projected **census** of COVID-19 patients by Hospital, accounting for arrivals and discharges: SIR Model")
-# st.altair_chart(
-    # hosp_admitted_patients_chart(
-        # census_table, 
-        # as_date=as_date), 
-    # use_container_width=True)
-
-# Projected Hospital census SEIR Model
-# st.subheader("Projected **census** of COVID-19 patients by Hospital, accounting for arrivals and discharges: SEIR Model")
-# st.altair_chart(
-    # hosp_admitted_patients_chart(
-        # census_table_e, 
-        # as_date=as_date), 
-    # use_container_width=True)
-
-# , scale=alt.Scale(domain=[0, 30000])
-
-# Projected Hospital census SEIR Model with adjusted R_0
-# st.subheader("Projected **census** of COVID-19 patients by Hospital, accounting for arrivals and discharges: SEIR Model with Adjusted R_0")
-# st.altair_chart(
-    # hosp_admitted_patients_chart(
-        # census_table_R, 
-        # as_date=as_date), 
-    # use_container_width=True)
-
-# Projected Hospital census SEIR Model with adjusted R_0 and Case Mortality    
-st.subheader("Projected **census** of COVID-19 patients by Hospital, accounting for arrivals and discharges: SEIR Model with Adjusted R_0 and Case Fatality")
-st.altair_chart(
-    hosp_admitted_patients_chart(
-        census_table_D, 
-        as_date=as_date), 
-    use_container_width=True)
-
-
-# Census - SIR model Table
-# if st.checkbox("Show Projected Census in tabular form"):
-    # st.dataframe(census_table)
-
-# Census - SEIR model Table
-# if st.checkbox("Show Projected Census in tabular form: SEIR Model"):
-    # st.dataframe(census_table_e)
-
-# # Census - SEIR model with adjusted R_0 Table
-# if st.checkbox("Show Projected Census in tabular form: SEIR Model with adjusted R_0"):
-    # st.dataframe(census_table_R)
-    
-# # Census - SEIR model with adjusted R_0 and case fatality Table
-# if st.checkbox("Show Projected Census in tabular form: SEIR Model with adjusted R_0 and case fatality."):
-    # st.dataframe(census_table_D)
-
-
-
-
-
-
 
 # Erie Graph of Beds
 def bed_lines(
