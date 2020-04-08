@@ -10,6 +10,4 @@ echo "\
 headless = true\n\
 enableCORS=true\n\
 port = $PORT\n\
-baseUrlPath = 'covid_analytics'\n\
-serverAddress = 'https://halsted.compbio.buffalo.edu'\n\
 " > ~/.streamlit/config.toml
