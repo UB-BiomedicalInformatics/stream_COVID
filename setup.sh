@@ -8,7 +8,8 @@ email = \"pennsignals@uphs.upenn.edu\"\n\
 echo "\
 [server]\n\
 headless = true\n\
-enableCORS=false\n\
+enableCORS=true\n\
 port = $PORT\n\
 baseUrlPath = 'covid_analytics'\n\
+serverAddress = 'https://halsted.compbio.buffalo.edu'\n\
 " > ~/.streamlit/config.toml
