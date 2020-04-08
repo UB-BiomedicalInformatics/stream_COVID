@@ -10,4 +10,5 @@ echo "\
 headless = true\n\
 enableCORS=false\n\
 port = $PORT\n\
+baseUrlPath = 'covid_analytics'\n\
 " > ~/.streamlit/config.toml
