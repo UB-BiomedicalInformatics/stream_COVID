@@ -1,5 +1,5 @@
 ## Model and Model Development
-The SEIR model and application were developed by the University at Buffalo's [Biomedical Informatics Department](http://medicine.buffalo.edu/departments/biomedical-informatics.html) with special help from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology and [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics.
+The SEIR model and application were developed by the University at Buffalo's [Biomedical Informatics Department](http://medicine.buffalo.edu/departments/biomedical-informatics.html) with special help from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com). 
 
 Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and fine-tunes the model for Erie County and hospital specific estimates.
 
@@ -44,3 +44,8 @@ port, then set `PORT` in the `.env` file.
 
 ## Deployment
 **Before you push your changes to master make sure that everything works in development mode.**
+
+## Acknowledgements
+
+This work has been supported in part by grants from NIH NLM T15LM012495, NIAA R21AA026954, and NCATS UL1TR001412.
+
