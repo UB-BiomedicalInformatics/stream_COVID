@@ -475,7 +475,8 @@ data = {
 bed_share = pd.DataFrame(data)
 
 # Load erie county data
-url = "https://raw.githubusercontent.com/gabai/stream_KH/master/Cases_Erie.csv"
+#url = "https://raw.githubusercontent.com/gabai/stream_KH/master/Cases_Erie.csv"
+url = "https://raw.githubusercontent.com/UB-BiomedicalInformatics/stream_COVID/master/Cases_Erie.csv"
 erie_df = pd.read_csv(url)
 erie_df['Date'] = pd.to_datetime(erie_df['Date'])
 
