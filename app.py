@@ -2,6 +2,7 @@
 # Contact: ganaya@buffalo.edu
 
 import tensorflow as tf
+import tensorboard as tb
 
 from functools import reduce
 from typing import Generator, Tuple, Dict, Any, Optional
