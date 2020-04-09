@@ -1,6 +1,8 @@
 # Modified version for Erie County, New York
 # Contact: ganaya@buffalo.edu
 
+import tensorflow as tf
+
 from functools import reduce
 from typing import Generator, Tuple, Dict, Any, Optional
 import pandas as pd
@@ -15,7 +17,6 @@ from datetime import date, datetime, timedelta
 import time
 import altair as alt
 from collections import namedtuple
-
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -431,23 +432,17 @@ ppe_severe_val_upper = 24
 # List of Groups
 groups = ['hosp', 'icu', 'vent']
 
-# Load erie county data
-url = "https://raw.githubusercontent.com/UB-BiomedicalInformatics/stream_COVID/master/Cases_Erie.csv"
-erie_df = pd.read_csv(url)
-erie_df['Date'] = pd.to_datetime(erie_df['Date'])
-
 # Populations and Infections
 erie = 1500000
-cases_erie = erie_df['Cases'].iloc[-1]
+cases_erie = 1432.0
 S_default = erie
-known_infections = erie_df['Cases'].iloc[-1]
-known_cases = erie_df['Admissions'].iloc[-1]
+known_infections = 1432.0
+known_cases = 120.0
 regional_hosp_share = 1.0
 S = erie
 
 
 # Widgets
-    
 model_options = st.sidebar.radio(
     "Service", ('Inpatient', 'ICU', 'Ventilated'))
 
@@ -583,20 +578,6 @@ icu_days = 1 / icu_los
 st.title("COVID-19 Disease Model - Erie County, NY")
 
 
-###################### First Graph ###################
-# Erie cases Graph
-erie_cases_bar = alt.Chart(erie_df).mark_bar(color='lightgray').encode(
-    x='Date:T',
-    y='Cases:Q',
-    tooltip=[alt.Tooltip("Cases:Q", format=".0f", title="Cases")])
-erie_admit_line = alt.Chart(erie_df).mark_line(color='red', point=True).encode(
-    x='Date:T',
-    y='Admissions:Q')
-erie_icu_line = alt.Chart(erie_df).mark_line(color='orange', point=True).encode(
-    x='Date:T',
-    y='ICU:Q')
-
-
 # Slider and Date
 n_days = st.slider("Number of days to project", 30, 200, 120, 1, "%i")
 as_date = st.checkbox(label="Present result as dates", value=False)
@@ -634,147 +615,6 @@ def erie_chart(
         )
         .interactive()
     )
-
-  
-#Erie Graph of Cases # Lines of cases # Inpatient Census
-
-if as_date:
-    #erie_df = add_date_column(erie_df)
-    day_date = 'Date:T'
-    def erie_inpatient(projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-    
-        projection_admits = projection_admits.rename(columns={"Admissions": "Erie County Inpatient"})
-    
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County Inpatient"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-else:
-    day_date = 'day'
-    def erie_inpatient(
-        projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-    
-        projection_admits = projection_admits.rename(columns={"Admissions": "Erie County Inpatient"})
-    
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County Inpatient"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-
-# Erie Graph of Cases # Lines of cases # ICU Census
-if as_date:
-    #erie_df = add_date_column(erie_df)
-    day_date = 'Date:T'
-    def erie_icu(projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-        
-        projection_admits = projection_admits.rename(columns={"ICU": "Erie County ICU"})
-        
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County ICU"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-else:
-    day_date = 'day'
-    def erie_icu(projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-        
-        projection_admits = projection_admits.rename(columns={"ICU": "Erie County ICU"})
-        
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County ICU"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-    
-# Erie Graph of Cases # Lines of cases # Ventilator Census
-if as_date:
-    #erie_df = add_date_column(erie_df)
-    day_date = 'Date:T'
-    def erie_vent(projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-        
-        projection_admits = projection_admits.rename(columns={"Ventilated": "Erie County Ventilated"})
-          
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County Ventilated"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-else:
-    day_date = 'day'
-    def erie_vent(projection_admits: pd.DataFrame) -> alt.Chart:
-        """docstring"""
-        
-        projection_admits = projection_admits.rename(columns={"Ventilated": "Erie County Ventilated"})
-          
-        return(
-            alt
-            .Chart(projection_admits)
-            .transform_fold(fold=["Erie County Ventilated"])
-            .mark_line(strokeWidth=3, strokeDash=[2,3], point=True)
-            .encode(
-                x=alt.X(day_date),
-                y=alt.Y("value:Q", title="Census"),
-                color="key:N",
-                tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-            )
-            .interactive()
-        )
-
-
-erie_lines = erie_chart(erie_df)
-erie_lines_ip = erie_inpatient(erie_df)
-erie_lines_icu = erie_icu(erie_df)
-erie_lines_vent = erie_vent(erie_df)
-
-# Bar chart of Erie cases with layer of HERDS DAta Erie
-st.altair_chart(erie_cases_bar + erie_lines, use_container_width=True)
 
 beta_decay = 0.0
 
@@ -1119,17 +959,17 @@ if model_options == "Inpatient":
     #fold_comp_census = ["Hospital Census", "Expanded IP Beds (50%)", "Expanded IP Beds (100%)"]
     columns_comp_census = {"hosp": "Hospital Census", "total_county_beds":"Inpatient Beds"}
     fold_comp_census = ["Hospital Census", "Inpatient Beds"]
-    graph_selection = erie_lines_ip
+    #graph_selection = erie_lines_ip
 if model_options == "ICU":
     #columns_comp_census = {"icu": "ICU Census", "expanded_icu_county": "Expanded ICU Beds (50%)", "expanded_icu_county2": "Expanded ICU Beds (100%)"}
     #fold_comp_census = ["ICU Census", "Expanded ICU Beds (50%)", "Expanded ICU Beds (100%)"]
     columns_comp_census = {"icu": "ICU Census", "total_county_icu": "ICU Beds"}
     fold_comp_census = ["ICU Census", "ICU Beds"]
-    graph_selection = erie_lines_icu
+    #graph_selection = erie_lines_icu
 if model_options == "Ventilated":
     columns_comp_census = {"vent": "Ventilated Census"}
     fold_comp_census = ["Ventilated Census"]
-    graph_selection = erie_lines_vent
+    #graph_selection = erie_lines_vent
 
 def ip_census_chart(
     census: pd.DataFrame,
@@ -1188,7 +1028,7 @@ st.subheader("Comparison of COVID-19 admissions for Erie County: Data vs Model")
 st.altair_chart(
     alt.layer(seir_ip_c.mark_line())
     + alt.layer(seir_d_ip_c.mark_line())
-    + alt.layer(graph_selection)
+    #+ alt.layer(graph_selection)
     + alt.layer(vertical1)
     , use_container_width=True)
 
