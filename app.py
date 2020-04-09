@@ -1,6 +1,8 @@
 # Modified version for Erie County, New York
 # Contact: ganaya@buffalo.edu
 
+import tensorflow as tf
+
 404
 
 from functools import reduce
