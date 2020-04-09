@@ -1,7 +1,5 @@
-# Modified version for Erie County, New York
+# COVID-19 
 # Contact: ganaya@buffalo.edu
-
-import tensorflow as tf
 
 from functools import reduce
 from typing import Generator, Tuple, Dict, Any, Optional
@@ -132,13 +130,6 @@ def build_census_df(
     census_df["day"] = census_df.index
     census_df = census_df[["day", "hosp", "icu", "vent", 
     ]]
-    
-    census_df['total_county_icu'] = icu_county
-    census_df['total_county_beds'] = beds_county
-    census_df['expanded_icu_county'] = expanded_icu_county_05
-    census_df['expanded_beds_county'] = expanded_beds_county_05
-    census_df['expanded_icu_county2'] = expanded_icu_county_1
-    census_df['expanded_beds_county2'] = expanded_beds_county_1
     
     # PPE for hosp/icu
     census_df['ppe_mild_d'] = census_df['hosp'] * ppe_mild_val_lower
@@ -355,9 +346,6 @@ def sim_seijcrd_decay(
         np.array(d_v)
     )
 
-
-# End Models # 
-
 # Add dates #
 def add_date_column(
     df: pd.DataFrame, drop_day_column: bool = False, date_format: Optional[str] = None,
@@ -411,18 +399,6 @@ def add_date_column(
     return df
 
     
-
-# Adding ICU bed for Erie county
-# 3/25/20
-icu_county = 468
-beds_county = 2762
-# Bed expansion at 50%
-expanded_icu_county_05 = 369
-expanded_beds_county_05 = 3570
-# Bed expansion at 100%
-expanded_icu_county_1 = 492
-expanded_beds_county_1 = 4760
-
 # PPE Values
 ppe_mild_val_lower = 14
 ppe_mild_val_upper = 15
@@ -433,13 +409,12 @@ ppe_severe_val_upper = 24
 groups = ['hosp', 'icu', 'vent']
 
 # Populations and Infections
-erie = 1500000
-cases_erie = 1432.0
-S_default = erie
-known_infections = 1432.0
+population = 1000000
+cases = 1000.0
+S_default = population
+known_infections = 1000.0
 known_cases = 120.0
 regional_hosp_share = 1.0
-S = erie
 
 
 # Widgets
@@ -450,12 +425,12 @@ current_hosp = st.sidebar.number_input(
     "Total Hospitalized Cases", value=known_cases, step=1.0, format="%f")
 
 doubling_time = st.sidebar.number_input(
-    "Doubling Time (days)", value=3.0, step=1.0, format="%f")
+    "Doubling Time (days)", value=4.0, step=1.0, format="%f")
 
 start_date = st.sidebar.date_input(
     "Suspected first contact", datetime(2020,3,1))
 start_day = 1
-    
+
 relative_contact_rate = st.sidebar.number_input(
     "Social distancing (% reduction in social contact) Unadjusted Model", 0, 100, value=0, step=5, format="%i")/100.0
 
@@ -463,14 +438,14 @@ decay1 = st.sidebar.number_input(
     "Social distancing (% reduction in social contact) in Week 0-2", 0, 100, value=0, step=5, format="%i")/100.0
 
 intervention1 = st.sidebar.date_input(
-    "Date of change Social Distancing - School Closure", datetime(2020,3,22))
+    "Date of change Social Distancing - School Closure", datetime(2020,3,18))
 int1_delta = (intervention1 - start_date).days
     
 decay2 = st.sidebar.number_input(
     "Social distancing (% reduction in social contact) in Week 3 - School Closure", 0, 100, value=15, step=5, format="%i")/100.0
 
 intervention2 = st.sidebar.date_input(
-    "Date of change in Social Distancing - Closure Businesses, Shelter in Place", datetime(2020,3,28))
+    "Date of change in Social Distancing - Closure Businesses, Shelter in Place", datetime(2020,3,25))
 int2_delta = (intervention2 - start_date).days
 
 decay3 = st.sidebar.number_input(
@@ -575,7 +550,7 @@ beta4 = (
 gamma_hosp = 1 / hosp_los
 icu_days = 1 / icu_los
 
-st.title("COVID-19 Disease Model - Erie County, NY")
+st.title("COVID-19 Disease Model")
 
 
 # Slider and Date
@@ -583,10 +558,10 @@ n_days = st.slider("Number of days to project", 30, 200, 120, 1, "%i")
 as_date = st.checkbox(label="Present result as dates", value=False)
 
 
-st.header("""Erie County: Reported Cases, Census and Admissions""")
+st.header("""Reported Cases, Census and Admissions""")
 
-# Erie Graph of Cases # Lines of cases
-def erie_chart(
+# Graph of Cases # Lines of cases
+def cases_chart(
     projection_admits: pd.DataFrame) -> alt.Chart:
     """docstring"""
     
@@ -609,7 +584,7 @@ def erie_chart(
         .mark_line(strokeWidth=3, point=True)
         .encode(
             x=alt.X("Date", title="Date"),
-            y=alt.Y("value:Q", title="Erie County Census"),
+            y=alt.Y("value:Q", title="Census"),
             color="key:N",
             tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
         )
@@ -769,9 +744,7 @@ if relative_contact_rate >= 0:
     projection_admits_e20 = build_admissions_df(dispositions_e)
     census_table_e20 = build_census_df(projection_admits_e20)
 
-# Erie Graph of Cases: SIR, SEIR
 # Admissions Graphs
-# Erie Graph of Cases
 def regional_admissions_chart(
     projection_admits: pd.DataFrame, 
     plot_projection_days: int,
@@ -812,15 +785,11 @@ def regional_admissions_chart(
 if model_options == "Inpatient":
     columns_comp = {"hosp": "Hospitalized"}
     fold_comp = ["Hospitalized"]
-    #capacity_col = {"expanded_beds":"Expanded IP Beds (50%)", "expanded_beds2":"Expanded IP Beds (100%)"}
-    #capacity_fol = ["Expanded IP Beds (50%)", "Expanded IP Beds (100%)"]
     capacity_col = {"total_county_beds":"Inpatient Beds"}
     capacity_fol = ["Inpatient Beds"]
 if model_options == "ICU":
     columns_comp = {"icu": "ICU"}
     fold_comp = ["ICU"]
-    #capacity_col = {"expanded_icu_beds": "Expanded ICU Beds (50%)", "expanded_icu_beds2": "Expanded ICU Beds (100%)"}
-    #capacity_fol = ["Expanded ICU Beds (50%)", "Expanded ICU Beds (100%)"]
     capacity_col = {"total_county_icu": "ICU Beds"}
     capacity_fol = ["ICU Beds"]
 if model_options == "Ventilated":
@@ -835,7 +804,7 @@ def ip_chart(
     as_date:bool = False) -> alt.Chart:
     """docstring"""
     
-    projection_admits = projection_admits.rename(columns=columns_comp|capaity_col)
+    projection_admits = projection_admits.rename(columns=columns_comp)
     
     tooltip_dict = {False: "day", True: "date:T"}
     if as_date:
@@ -901,8 +870,7 @@ vertical1 = vertical_chart(vertical, as_date=as_date)
 ##############################
 #4/3/20 First Projection Graph - Admissions
 #############
-st.header("""Projected Admissions Models for Erie County""")
-st.subheader("Projected number of **daily** COVID-19 admissions for Erie County: SEIR - Phase Adjusted R_0 with Case Fatality")
+st.subheader("Projected number of **daily** COVID-19 admissions: SEIR - Phase Adjusted R_0 with Case Fatality")
 admits_graph = regional_admissions_chart(projection_admits_D, 
         plot_projection_days, 
         as_date=as_date)
@@ -927,7 +895,7 @@ The epidemic proceeds via a growth and decline process. This is the core model o
 
     st.markdown(
     """where $\gamma$ is $1/mean\ infectious\ rate$, $$\\alpha$$ is $1/mean\ incubation\ period$, $$\\rho$$ is the rate of social distancing at time $t$,
-and $$\\beta$$ is the rate of transmission. More information, including parameter specifications and reasons for model choice can be found [here]("https://github.com/gabai/stream_KH/wiki).""")
+and $$\\beta$$ is the rate of transmission.""")
 
 
 sir = regional_admissions_chart(projection_admits, plot_projection_days, as_date=as_date)
@@ -936,8 +904,8 @@ seir_r = regional_admissions_chart(projection_admits_R, plot_projection_days, as
 seir_d = regional_admissions_chart(projection_admits_D, plot_projection_days, as_date=as_date)
 
 
-if st.checkbox("Show Graph of Erie County Projected Admissions with Model Comparison of Social Distancing"):
-    st.subheader("Projected number of **daily** COVID-19 admissions for Erie County: Model Comparison (Left: 0% Social Distancing, Right: Step-Wise Social Distancing)")
+if st.checkbox("Show Graph of Projected Admissions with Model Comparison of Social Distancing"):
+    st.subheader("Projected number of **daily** COVID-19 admissions: Model Comparison (Left: 0% Social Distancing, Right: Step-Wise Social Distancing)")
     st.altair_chart(
         alt.layer(seir.mark_line())
         + alt.layer(seir_d.mark_line())
@@ -950,33 +918,14 @@ if st.checkbox("Show Graph of Erie County Projected Admissions with Model Compar
 #############    Census Graphs        ##########
 ################################################
 ################################################
-st.header("""Projected Census Models for Erie County""")
-
-
-# Comparison of Census Single line graph - Hospitalized, ICU, Vent
-if model_options == "Inpatient":
-    #columns_comp_census = {"hosp": "Hospital Census", "expanded_beds_county":"Expanded IP Beds (50%)", "expanded_beds_county2":"Expanded IP Beds (100%)"}
-    #fold_comp_census = ["Hospital Census", "Expanded IP Beds (50%)", "Expanded IP Beds (100%)"]
-    columns_comp_census = {"hosp": "Hospital Census", "total_county_beds":"Inpatient Beds"}
-    fold_comp_census = ["Hospital Census", "Inpatient Beds"]
-    #graph_selection = erie_lines_ip
-if model_options == "ICU":
-    #columns_comp_census = {"icu": "ICU Census", "expanded_icu_county": "Expanded ICU Beds (50%)", "expanded_icu_county2": "Expanded ICU Beds (100%)"}
-    #fold_comp_census = ["ICU Census", "Expanded ICU Beds (50%)", "Expanded ICU Beds (100%)"]
-    columns_comp_census = {"icu": "ICU Census", "total_county_icu": "ICU Beds"}
-    fold_comp_census = ["ICU Census", "ICU Beds"]
-    #graph_selection = erie_lines_icu
-if model_options == "Ventilated":
-    columns_comp_census = {"vent": "Ventilated Census"}
-    fold_comp_census = ["Ventilated Census"]
-    #graph_selection = erie_lines_vent
+st.header("""Projected Census Models""")
 
 def ip_census_chart(
     census: pd.DataFrame,
     plot_projection_days: int,
     as_date:bool = False) -> alt.Chart:
     """docstring"""
-    census = census.rename(columns=columns_comp_census)
+    census = census.rename(columns=columns_comp)
 
     tooltip_dict = {False: "day", True: "date:T"}
     if as_date:
@@ -988,7 +937,7 @@ def ip_census_chart(
     return (
         alt
         .Chart(census)
-        .transform_fold(fold=fold_comp_census)
+        .transform_fold(fold=fold_comp)
         .mark_line(point=False)
         .encode(
             x=alt.X(**x_kwargs),
@@ -1003,6 +952,21 @@ def ip_census_chart(
         .interactive()
     )
 
+#sir_ip_c = ip_census_chart(census_table, plot_projection_days, as_date=as_date)
+seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_date)
+#seir_r_ip_c = ip_census_chart(census_table_R, plot_projection_days, as_date=as_date)
+seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
+###
+# Added SEIR 10, 20 SD
+seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
+seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
+
+st.altair_chart(
+    alt.layer(seir_ip_c.mark_line())
+    + alt.layer(seir_d_ip_c.mark_line())
+    #+ alt.layer(graph_selection)
+    + alt.layer(vertical1)
+    , use_container_width=True)
 
 ################# Add 0% 10% 20% SD graph of SEIR MODEL ###################
 
@@ -1021,59 +985,12 @@ seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as
 seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
 
 
-  
-
-# Chart of Model Comparison for SEIR and Adjusted with Erie County Data
-st.subheader("Comparison of COVID-19 admissions for Erie County: Data vs Model")
-st.altair_chart(
-    alt.layer(seir_ip_c.mark_line())
-    + alt.layer(seir_d_ip_c.mark_line())
-    #+ alt.layer(graph_selection)
-    + alt.layer(vertical1)
-    , use_container_width=True)
-
-
-
-# Erie Graph of Beds
-def bed_lines(
-    projection_admits: pd.DataFrame) -> alt.Chart:
-    """docstring"""
-    
-    projection_admits = projection_admits.rename(columns={"total_county_icu": "ICU Beds", 
-                                                            "total_county_beds":"Inpatient Beds", 
-                                                            "expanded_icu_county":"Expanded ICU 50%",
-                                                            "expanded_beds_county":"Expanded Inpatient 50%",
-                                                            "expanded_icu_county2":"Expanded ICU 100%",
-                                                            "expanded_beds_county2":"Expanded Inpatient 100%"
-                                                            })
-    
-    return(
-        alt
-        .Chart(projection_admits)
-        .transform_fold(fold=["ICU Beds", 
-                                "Inpatient Beds", 
-                                "Expanded ICU 50%",
-                                "Expanded Inpatient 50%",
-                                "Expanded ICU 100%",
-                                "Expanded Inpatient 100%"
-                                ])
-        .mark_line(point=False)
-        .encode(
-            x=alt.X("day", title="Date"),
-            y=alt.Y("value:Q", title="Erie County Bed Census"),
-            color="key:N",
-            tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-        )
-        .interactive()
-    )
-
-
 ##########################################################
 ##########################################################
 ###########            PPE            ####################
 ##########################################################
 ##########################################################
-st.header("Projected PPE Needs for Erie County")
+st.header("Projected PPE Needs")
 def ppe_chart(
     census: pd.DataFrame,
     as_date:bool = False) -> alt.Chart:
@@ -1186,5 +1103,5 @@ st.markdown("""The initial $R_0$ is **{AAA:.1f}** the $R_0$ after 2 weeks is **{
             )
 
 st.markdown("""The SEIR model and application were developed by the University at Buffalo's [Biomedical Informatics Department](http://medicine.buffalo.edu/departments/biomedical-informatics.html) with special help from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com) with [Peter Winkelstein](http://medicine.buffalo.edu/faculty/profile.html?ubit=pwink). 
-            Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and fine-tunes the model for Erie County and hospital specific estimates.
+            Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and fine-tunes the model.
             Documentation of parameter choices and model choices can be found in the github Wiki.  For questions, please email [Gabriel Anaya](ganaya@buffalo.edu) or [Sarah Mullin](sarahmul@buffalo.edu).  """)
