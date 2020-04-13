@@ -457,7 +457,7 @@ end_date = st.sidebar.date_input(
 end_delta = (end_date - start_date).days
 
 decay4 = st.sidebar.number_input(
-    "Social distancing after end date", 0, 100, value=15 ,step=5, format="%i")/100.0
+    "Social distancing after end date", 0, 100, value=60 ,step=5, format="%i")/100.0
 
 hosp_rate = (
     st.sidebar.number_input("Hospitalization %", 0.0, 100.0, value=2.5, step=0.50, format="%f")/ 100.0)
@@ -469,22 +469,22 @@ vent_rate = (
     st.sidebar.number_input("Ventilated %", 0.0, 100.0, value=1.0, step=0.25, format="%f")/ 100.0)
 
 incubation_period =(
-    st.sidebar.number_input("Incubation Period", 0.0, 12.0, value=5.2, step=0.1, format="%f"))
+    st.sidebar.number_input("Incubation Period", 0.0, 12.0, value=5.8, step=0.1, format="%f"))
 
 recovery_days =(
-    st.sidebar.number_input("Recovery Period", 0.0, 21.0, value=11.0 ,step=0.1, format="%f"))
+    st.sidebar.number_input("Recovery Period", 0.0, 21.0, value=14.0 ,step=0.1, format="%f"))
 
 infectious_period =(
-    st.sidebar.number_input("Infectious Period", 0.0, 18.0, value=3.0,step=0.1, format="%f"))
+    st.sidebar.number_input("Infectious Period", 0.0, 18.0, value=14.0,step=0.1, format="%f"))
 
 fatal = st.sidebar.number_input(
-    "Overall Fatality (%)", 0.0, 100.0, value=0.5 ,step=0.1, format="%f")/100.0
+    "Overall Fatality (%)", 0.0, 100.0, value=1.6 ,step=0.1, format="%f")/100.0
 
 fatal_hosp = st.sidebar.number_input(
     "Hospital Fatality (%)", 0.0, 100.0, value=4.0 ,step=0.1, format="%f")/100.0
 
 death_days = st.sidebar.number_input(
-    "Days person remains in critical care or dies", 0, 20, value=4 ,step=1, format="%f")
+    "Days person remains in critical care or dies", 0, 20, value=6,step=1, format="%f")
 
 crit_lag = st.sidebar.number_input(
     "Days person takes to go to critical care", 0, 20, value=4 ,step=1, format="%f")
