@@ -479,10 +479,9 @@ known_infections = 1000.0
 known_cases = 120.0
 regional_hosp_share = 1.0
 
-
-import pandas as pd
-url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
-df = pd.read_csv(url, error_bad_lines=False)
+# Import 
+#url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
+#df = pd.read_csv(url, error_bad_lines=False)
 
 
 # Widgets
@@ -839,23 +838,23 @@ projection_admits_D = build_admissions_df(dispositions_D)
 census_table_D = build_census_df(projection_admits_D)
 
 
-if relative_contact_rate >= 0:
-    SD10 = relative_contact_rate + 10
-    gamma = 1 / recovery_days
-    beta = (intrinsic_growth_rate + gamma) / S * (1-SD10) # {rate based on doubling time} / {initial S}
-    r_t = beta / gamma * S # r_t is r_0 after distancing
-    r_naught = (intrinsic_growth_rate + gamma) / gamma
-    #doubling_time_t = 1/np.log2(beta*S - gamma +1) # doubling time after distancing
-    projection_admits_e10 = build_admissions_df(dispositions_e)
-    census_table_e10 = build_census_df(projection_admits_e10)
-    ##################################
-    SD20 = relative_contact_rate + 20
-    gamma = 1 / recovery_days
-    beta = (intrinsic_growth_rate + gamma) / S * (1-SD20) # {rate based on doubling time} / {initial S}
-    r_t = beta / gamma * S # r_t is r_0 after distancing
-    r_naught = (intrinsic_growth_rate + gamma) / gamma
-    projection_admits_e20 = build_admissions_df(dispositions_e)
-    census_table_e20 = build_census_df(projection_admits_e20)
+# if relative_contact_rate >= 0:
+    # SD10 = relative_contact_rate + 10
+    # gamma = 1 / recovery_days
+    # beta = (intrinsic_growth_rate + gamma) / S * (1-SD10) # {rate based on doubling time} / {initial S}
+    # r_t = beta / gamma * S # r_t is r_0 after distancing
+    # r_naught = (intrinsic_growth_rate + gamma) / gamma
+    # #doubling_time_t = 1/np.log2(beta*S - gamma +1) # doubling time after distancing
+    # projection_admits_e10 = build_admissions_df(dispositions_e)
+    # census_table_e10 = build_census_df(projection_admits_e10)
+    # ##################################
+    # SD20 = relative_contact_rate + 20
+    # gamma = 1 / recovery_days
+    # beta = (intrinsic_growth_rate + gamma) / S * (1-SD20) # {rate based on doubling time} / {initial S}
+    # r_t = beta / gamma * S # r_t is r_0 after distancing
+    # r_naught = (intrinsic_growth_rate + gamma) / gamma
+    # projection_admits_e20 = build_admissions_df(dispositions_e)
+    # census_table_e20 = build_census_df(projection_admits_e20)
 
 ## Confirmed cases graphs
 
@@ -920,36 +919,49 @@ df_Erie2=df_Erie2.drop(['Region'], axis=1)
 
 result = pd.concat([df_US2, df_NY2, df_Erie2], axis=1, sort=False)
 result=result.drop(['Day2', 'Day3'],axis=1)
-result['Day'] = np.arange(len(result))
+result['day'] = np.arange(len(result))
 result['US']=(result['US']/328000000)*100
 result['NY']=(result['NY']/19450000)*100
 result['Erie']=(result['Erie']/1500000)*100
 #st.dataframe(result)
+
 st.subheader("""Confirmed Cases for the US, New York, and Erie County""")
 # Erie Graph of Cases # Lines of cases
 def confirmed_chart(
-    result: pd.DataFrame) -> alt.Chart:
+    projection: pd.DataFrame,
+    as_date:bool = False) -> alt.Chart:
     """docstring"""
+    
+    tooltip_dict = {False: "day", True: "date:T"}
+    if as_date:
+        projection = add_date_column(projection)
+        x_kwargs = {"shorthand": "date:T", "title": "Date"}
+    else:
+        x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
     
     return(
         alt
-        .Chart(result)
+        .Chart(projection)
         .transform_fold(fold=["US", 
-                                "NY", 
+                               "NY", 
                                 "Erie",
                                 ])
-        .mark_line(strokeWidth=3, point=True)
+        .mark_line(strokeWidth=2, point=True)
         .encode(
-            x=alt.X("Day", title="Date"),
+            x=alt.X(**x_kwargs),
             y=alt.Y("value:Q", title="% Confirmed Cases Per Region Population"),
             color="key:N",
-            tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
+            tooltip=[
+                tooltip_dict[as_date],
+                alt.Tooltip("value:Q", format=".0f", title="COVID-19 Cases"),
+                "key:N",
+            ],
         )
         .interactive()
     )
 
  # Bar chart of Erie cases with layer of HERDS DAta Erie
-st.altair_chart(confirmed_chart(result), use_container_width=True)
+st.altair_chart(confirmed_chart(result, as_date=as_date), use_container_width=True)
 
 st.markdown(
     """This chart shows the percent daily [confirmed](https://coronavirus.jhu.edu/map.html) cases per region population. These numbers are highly influenced by testing rates and testing practices in each geographic location. """
@@ -1183,8 +1195,8 @@ seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_dat
 seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
 ###
 # Added SEIR 10, 20 SD
-seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
-seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
+#seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
+#seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
 
 st.altair_chart(
     alt.layer(seir_d_ip_c.mark_line())
@@ -1210,8 +1222,8 @@ seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_dat
 seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
 ###
 # Added SEIR 10, 20 SD
-seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
-seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
+#seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
+#seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
 
 
 ##########################################################
