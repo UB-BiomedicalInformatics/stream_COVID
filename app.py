@@ -471,12 +471,6 @@ ppe_severe_val_upper = 24
 # List of Groups
 groups = ['hosp', 'icu', 'vent']
 
-
-# Import 
-#url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
-#df = pd.read_csv(url, error_bad_lines=False)
-
-
 # Widgets
 # model_options = st.sidebar.radio(
     # "Service", ('Inpatient', 'ICU', 'Ventilated'))
@@ -501,10 +495,10 @@ S_default = population
 known_infections = 1000.0
 known_cases = 120.0
 regional_hosp_share = 1.0
+current_hosp =known_cases
 
-
-current_hosp = st.sidebar.number_input(
-    "Total Hospitalized Cases", value=known_cases, step=1.0, format="%f")
+##current_hosp = st.sidebar.number_input(
+##    "Total Hospitalized Cases", value=known_cases, step=1.0, format="%f")
 
 doubling_time = st.sidebar.number_input(
     "Doubling Time (days)", value=5.0, step=1.0, format="%f")
@@ -513,9 +507,9 @@ start_date = st.sidebar.date_input(
     "Suspected first contact", first_case_date)
 start_day = 1
 
-relative_contact_rate = st.sidebar.number_input(
-    "Social distancing (% reduction in social contact) Unadjusted Model", 0, 100, value=0, step=5, format="%i")/100.0
-
+##relative_contact_rate = st.sidebar.number_input(
+##    "Social distancing (% reduction in social contact) Unadjusted Model", 0, 100, value=0, step=5, format="%i")/100.0
+relative_contact_rate=0
 decay1 = st.sidebar.number_input(
     "Social distancing (% reduction in social contact) in Week 0-2", 0, 100, value=0, step=5, format="%i")/100.0
 
@@ -587,9 +581,9 @@ vent_los = st.sidebar.number_input("Ventilator Length of Stay", value=6, step=1,
 S = st.sidebar.number_input(
   "Regional Population", value=S_default, step=100000, format="%i")
 
-initial_infections = st.sidebar.number_input(
-    "Currently Known Regional Infections (only used to compute detection rate - does not change projections)", value=known_infections, step=10.0, format="%f")
-
+##initial_infections = st.sidebar.number_input(
+##    "Currently Known Regional Infections (only used to compute detection rate - does not change projections)", value=known_infections, step=10.0, format="%f")
+initial_infections=known_cases
 total_infections = current_hosp / regional_hosp_share / hosp_rate
 detection_prob = initial_infections / total_infections
 
@@ -643,7 +637,7 @@ st.title("COVID-19 Disease Model")
 
 
 # Slider and Datealpha
-n_days = st.slider("Number of days to project", 30, 200, 120, 1, "%i")
+n_days = st.slider("Number of days to project", 30, 200, 180, 1, "%i")
 as_date = st.checkbox(label="Present result as dates", value=False)
 
 
@@ -1112,7 +1106,7 @@ st.markdown(
 )
 
 #st.dataframe(projection_admits)
-if st.checkbox("Show more info about this tool"):
+if st.checkbox("Show more info about the model specification and assumptions"):
     st.subheader(
      "[Deterministic SEIR model](https://www.tandfonline.com/doi/full/10.1080/23737867.2018.1509026)")
     st.markdown(
@@ -1378,7 +1372,8 @@ R2=AAA*(1-decay2)
 R3=AAA*(1-decay3)
 R4=AAA*(1-decay4)
 
-st.markdown("""The initial $R_0$ is **{AAA:.1f}** the $R_0$ after 2 weeks is **{R2:.1f}** and the $R_0$ after 3 weeks to end of social distancing is **{R3:.1f}**. After reducing social distancing the $R_0$ is **{R4:.1f}**
+st.markdown("""The initial $R_0$ is **{AAA:.1f}** the $R_e$ after 2 weeks is **{R2:.1f}** and the $R_e$ after 3 weeks to end of social distancing is **{R3:.1f}**.
+After reducing social distancing, the $R_e$ is **{R4:.1f}**.
             This is based on a doubling rate of **{doubling_time:.0f}** and the calculation of the [basic reproduction number](https://www.sciencedirect.com/science/article/pii/S2468042719300491).  """.format(
         AAA=AAA,
         R2=R2,
@@ -1413,6 +1408,13 @@ st.markdown("""The initial $R_0$ is **{AAA:.1f}** the $R_0$ after 2 weeks is **{
 ##
 ##
 
-st.markdown("""The SEIR model and application were developed by the University at Buffalo's [Biomedical Informatics Department](http://medicine.buffalo.edu/departments/biomedical-informatics.html) with special help from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology and Environmental Health, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com) with [Peter Winkelstein](http://medicine.buffalo.edu/faculty/profile.html?ubit=pwink). 
-            Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and fine-tunes the model.
-            Documentation of parameter choices and model choices can be found in the github Wiki.  For questions, please email [Gabriel Anaya](ganaya@buffalo.edu) or [Sarah Mullin](sarahmul@buffalo.edu).  """)
+st.markdown("""The SEIR model and application were developed by the University at Buffalo's Clinical Informatics lab in the
+[Department of Biomedical Informatics](http://medicine.buffalo.edu/departments/biomedical-informatics.html) (Gabriel Anaya, Sarah Mullin,
+Jinwei Hu, Brianne Mackenzie, Arlen Brickman, and [Peter Elkin](http://medicine.buffalo.edu/faculty/profile.html?ubit=elkinp)) with collaboration from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology and Environmental Health, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com) with [Peter Winkelstein](http://medicine.buffalo.edu/faculty/profile.html?ubit=pwink). 
+            Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and creates a step-wise social distancing adjusted model.
+            Documentation of parameter choices and model choices can be found in the department github Wiki.  For questions, please email [Gabriel Anaya](ganaya@buffalo.edu) or [Sarah Mullin](sarahmul@buffalo.edu).  """)
+
+if st.checkbox("Acknowledgments"):
+     st.markdown(
+    """This work has been supported in part by grants from NIH NLM T15LM012495, NIAA R21AA026954, and NCATS UL1TR001412. This study was funded in part by the Department of Veterans Affairs."""
+)
