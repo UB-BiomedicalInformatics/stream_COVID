@@ -983,7 +983,7 @@ def regional_admissions_chart(
     return (
         alt
         .Chart(projection_admits.head(plot_projection_days))
-        .transform_fold(fold=["Hospital", "ICU", "Ventilated"])
+        .transform_fold(fold=["Hospitalized", "ICU", "Ventilated"])
         .mark_line(point=False)
         .encode(
             x=alt.X(**x_kwargs),
