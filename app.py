@@ -471,13 +471,6 @@ ppe_severe_val_upper = 24
 # List of Groups
 groups = ['hosp', 'icu', 'vent']
 
-# Populations and Infections
-population = 1500000
-cases = 1000.0
-S_default = population
-known_infections = 1000.0
-known_cases = 120.0
-regional_hosp_share = 1.0
 
 # Import 
 #url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
@@ -485,8 +478,30 @@ regional_hosp_share = 1.0
 
 
 # Widgets
-model_options = st.sidebar.radio(
-    "Service", ('Inpatient', 'ICU', 'Ventilated'))
+# model_options = st.sidebar.radio(
+    # "Service", ('Inpatient', 'ICU', 'Ventilated'))
+
+location_option = st.sidebar.radio(
+    "Location", ('United States', 'New York State', 'Erie County, NY'))
+
+if location_option =='United States':
+    S = 328000000
+    first_case_date = datetime(2020,1,20)
+if location_option =='New York State':
+    S = 19450000
+    first_case_date = datetime(2020,3,1)
+if location_option =='Erie County, NY':
+    S = 1500000
+    first_case_date = datetime(2020,3,16)
+
+# Populations and Infections
+population = S
+cases = 1000.0
+S_default = population
+known_infections = 1000.0
+known_cases = 120.0
+regional_hosp_share = 1.0
+
 
 current_hosp = st.sidebar.number_input(
     "Total Hospitalized Cases", value=known_cases, step=1.0, format="%f")
@@ -495,7 +510,7 @@ doubling_time = st.sidebar.number_input(
     "Doubling Time (days)", value=5.0, step=1.0, format="%f")
 
 start_date = st.sidebar.date_input(
-    "Suspected first contact", datetime(2020,3,1))
+    "Suspected first contact", first_case_date)
 start_day = 1
 
 relative_contact_rate = st.sidebar.number_input(
@@ -635,35 +650,35 @@ as_date = st.checkbox(label="Present result as dates", value=False)
 st.header("""Reported Cases, Census and Admissions""")
 
 # Graph of Cases # Lines of cases
-def cases_chart(
-    projection_admits: pd.DataFrame) -> alt.Chart:
-    """docstring"""
+# def cases_chart(
+    # projection_admits: pd.DataFrame) -> alt.Chart:
+    # """docstring"""
     
-    projection_admits = projection_admits.rename(columns={"Admissions": "Census Inpatient", 
-                                                            "ICU":"Census Intensive", 
-                                                            "Ventilated":"Census Ventilated",
-                                                            "New_admits":"New Admissions",
-                                                            "New_discharge":"New Discharges",
-                                                            })
+    # projection_admits = projection_admits.rename(columns={"Admissions": "Census Inpatient", 
+                                                            # "ICU":"Census Intensive", 
+                                                            # "Ventilated":"Census Ventilated",
+                                                            # "New_admits":"New Admissions",
+                                                            # "New_discharge":"New Discharges",
+                                                            # })
     
-    return(
-        alt
-        .Chart(projection_admits)
-        .transform_fold(fold=["Census Inpatient", 
-                                "Census Intensive", 
-                                "Census Ventilated",
-                                "New Admissions",
-                                "New Discharges"
-                                ])
-        .mark_line(strokeWidth=3, point=True)
-        .encode(
-            x=alt.X("Date", title="Date"),
-            y=alt.Y("value:Q", title="Census"),
-            color="key:N",
-            tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
-        )
-        .interactive()
-    )
+    # return(
+        # alt
+        # .Chart(projection_admits)
+        # .transform_fold(fold=["Census Inpatient", 
+                                # "Census Intensive", 
+                                # "Census Ventilated",
+                                # "New Admissions",
+                                # "New Discharges"
+                                # ])
+        # .mark_line(strokeWidth=3, point=True)
+        # .encode(
+            # x=alt.X("Date", title="Date"),
+            # y=alt.Y("value:Q", title="Census"),
+            # color="key:N",
+            # tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
+        # )
+        # .interactive()
+    # )
 
 beta_decay = 0.0
 
@@ -804,10 +819,6 @@ plot_projection_days = n_days - 10
 ##s_H2, e_H2, i_H2, j_H2, r_H2, d_H2 = sim_seijcrd_decay2(S-2, 1.0, 1.0, 0.0, 0.0, 0.0, beta5, gamma2,alpha, n_days,decay2,decay3, fatal, fatal_hosp, hosp_day_rate, hosp_rate, l)
 ##
 
-
-# Projection days
-plot_projection_days = n_days - 10
-
 #############
 # # SIR Model
 # # New cases
@@ -837,24 +848,6 @@ projection_admits_D = build_admissions_df(dispositions_D)
 # Census Table
 census_table_D = build_census_df(projection_admits_D)
 
-
-# if relative_contact_rate >= 0:
-    # SD10 = relative_contact_rate + 10
-    # gamma = 1 / recovery_days
-    # beta = (intrinsic_growth_rate + gamma) / S * (1-SD10) # {rate based on doubling time} / {initial S}
-    # r_t = beta / gamma * S # r_t is r_0 after distancing
-    # r_naught = (intrinsic_growth_rate + gamma) / gamma
-    # #doubling_time_t = 1/np.log2(beta*S - gamma +1) # doubling time after distancing
-    # projection_admits_e10 = build_admissions_df(dispositions_e)
-    # census_table_e10 = build_census_df(projection_admits_e10)
-    # ##################################
-    # SD20 = relative_contact_rate + 20
-    # gamma = 1 / recovery_days
-    # beta = (intrinsic_growth_rate + gamma) / S * (1-SD20) # {rate based on doubling time} / {initial S}
-    # r_t = beta / gamma * S # r_t is r_0 after distancing
-    # r_naught = (intrinsic_growth_rate + gamma) / gamma
-    # projection_admits_e20 = build_admissions_df(dispositions_e)
-    # census_table_e20 = build_census_df(projection_admits_e20)
 
 ## Confirmed cases graphs
 
@@ -932,10 +925,10 @@ def confirmed_chart(
     as_date:bool = False) -> alt.Chart:
     """docstring"""
     
-    tooltip_dict = {False: "day", True: "date:T"}
+    tooltip_dict = {False: "day", True: "Date:T"}
     if as_date:
-        projection = add_date_column(projection)
-        x_kwargs = {"shorthand": "date:T", "title": "Date"}
+        #projection = add_date_column(projection)
+        x_kwargs = {"shorthand": "Date:T", "title": "Date"}
     else:
         x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
     
@@ -968,6 +961,14 @@ st.markdown(
 )
 #cols = [2,4]
 #result.drop(result.columns[cols],axis=1,inplace=True)
+
+
+
+
+
+
+
+
 st.header("""Model Projections""")
 # Admissions Graphs
 def regional_admissions_chart(
@@ -988,7 +989,7 @@ def regional_admissions_chart(
     return (
         alt
         .Chart(projection_admits.head(plot_projection_days))
-        .transform_fold(fold=["Hospitalized", "ICU", "Ventilated"])
+        .transform_fold(fold=["Hospital", "ICU", "Ventilated"])
         .mark_line(point=False)
         .encode(
             x=alt.X(**x_kwargs),
@@ -1007,54 +1008,56 @@ def regional_admissions_chart(
 
 
 # Comparison of Single line graph - Hospitalized, ICU, Vent and All
-if model_options == "Inpatient":
-    columns_comp = {"hosp": "Hospitalized"}
-    fold_comp = ["Hospitalized"]
-    capacity_col = {"total_county_beds":"Inpatient Beds"}
-    capacity_fol = ["Inpatient Beds"]
-if model_options == "ICU":
-    columns_comp = {"icu": "ICU"}
-    fold_comp = ["ICU"]
-    capacity_col = {"total_county_icu": "ICU Beds"}
-    capacity_fol = ["ICU Beds"]
-if model_options == "Ventilated":
-    columns_comp = {"vent": "Ventilated"}
-    fold_comp = ["Ventilated"]
-    capacity_col = {"expanded_vent_beds": "Expanded Ventilators (50%)", "expanded_vent_beds2": "Expanded Ventilators (100%)"}
-    capacity_fol = ["Expanded Ventilators (50%)", "Expanded Ventilators (100%)"]
+# if model_options == "Inpatient":
+    # columns_comp = {"hosp": "Hospitalized"}
+    # fold_comp = ["Hospitalized"]
+    # capacity_col = {"total_county_beds":"Inpatient Beds"}
+    # capacity_fol = ["Inpatient Beds"]
+# if model_options == "ICU":
+    # columns_comp = {"icu": "ICU"}
+    # fold_comp = ["ICU"]
+    # capacity_col = {"total_county_icu": "ICU Beds"}
+    # capacity_fol = ["ICU Beds"]
+# if model_options == "Ventilated":
+    # columns_comp = {"vent": "Ventilated"}
+    # fold_comp = ["Ventilated"]
+    # capacity_col = {"expanded_vent_beds": "Expanded Ventilators (50%)", "expanded_vent_beds2": "Expanded Ventilators (100%)"}
+    # capacity_fol = ["Expanded Ventilators (50%)", "Expanded Ventilators (100%)"]
 
-def ip_chart(
-    projection_admits: pd.DataFrame, 
-    plot_projection_days: int,
-    as_date:bool = False) -> alt.Chart:
-    """docstring"""
+# def ip_chart(
+    # projection_admits: pd.DataFrame, 
+    # plot_projection_days: int,
+    # as_date:bool = False) -> alt.Chart:
+    # """docstring"""
     
-    projection_admits = projection_admits.rename(columns=columns_comp)
+    # projection_admits = projection_admits.rename(columns=columns_comp)
     
-    tooltip_dict = {False: "day", True: "date:T"}
-    if as_date:
-        projection_admits = add_date_column(projection_admits)
-        x_kwargs = {"shorthand": "date:T", "title": "Date"}
-    else:
-        x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
+    # tooltip_dict = {False: "day", True: "date:T"}
+    # if as_date:
+        # projection_admits = add_date_column(projection_admits)
+        # x_kwargs = {"shorthand": "date:T", "title": "Date"}
+    # else:
+        # x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
     
-    return (
-        alt
-        .Chart(projection_admits.head(plot_projection_days))
-        .transform_fold(fold=fold_comp+capacity_fol)
-        .mark_line(point=False)
-        .encode(
-            x=alt.X(**x_kwargs),
-            y=alt.Y("value:Q", title="Daily admissions"),
-            color="key:N",
-            tooltip=[
-                tooltip_dict[as_date],
-                alt.Tooltip("value:Q", format=".0f", title="Admissions"),
-                "key:N",
-            ],
-        )
-        .interactive()
-    )
+    # return (
+        # alt
+        # .Chart(projection_admits.head(plot_projection_days))
+        # .transform_fold(fold=fold_comp+capacity_fol)
+        # .mark_line(point=False)
+        # .encode(
+            # x=alt.X(**x_kwargs),
+            # y=alt.Y("value:Q", title="Daily admissions"),
+            # color="key:N",
+            # tooltip=[
+                # tooltip_dict[as_date],
+                # alt.Tooltip("value:Q", format=".0f", title="Admissions"),
+                # "key:N",
+            # ],
+        # )
+        # .interactive()
+    # )
+
+
 
 #, scale=alt.Scale(domain=[0, 100])
 # alt.value('orange')
@@ -1100,7 +1103,9 @@ admits_graph = regional_admissions_chart(projection_admits_D,
         plot_projection_days, 
         as_date=as_date)
 
-st.altair_chart(admits_graph + vertical1, use_container_width=True)
+st.altair_chart(admits_graph, use_container_width=True)
+
+#+ vertical1,
 
 st.markdown(
     """This model shows the number of daily admissions projected for the chosen time period. """
@@ -1157,53 +1162,93 @@ if st.checkbox("Show Graph of Projected Admissions with Model Comparison of Soci
 ################################################
 st.header("""Projected Census Models""")
 
-def ip_census_chart(
+# def ip_census_chart(
+    # census: pd.DataFrame,
+    # plot_projection_days: int,
+    # as_date:bool = False) -> alt.Chart:
+    # """docstring"""
+    # census = census.rename(columns=columns_comp)
+
+    # tooltip_dict = {False: "day", True: "date:T"}
+    # if as_date:
+        # census = add_date_column(census.head(plot_projection_days))
+        # x_kwargs = {"shorthand": "date:T", "title": "Date"}
+    # else:
+        # x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
+
+    # return (
+        # alt
+        # .Chart(census)
+        # .transform_fold(fold=fold_comp)
+        # .mark_line(point=False)
+        # .encode(
+            # x=alt.X(**x_kwargs),
+            # y=alt.Y("value:Q", title="Census"),
+            # color="key:N",
+            # tooltip=[
+                # tooltip_dict[as_date],
+                # alt.Tooltip("value:Q", format=".0f", title="Census"),
+                # "key:N",
+            # ],
+        # )
+        # .interactive()
+    # )
+
+
+
+
+def admitted_patients_chart(
     census: pd.DataFrame,
     plot_projection_days: int,
-    as_date:bool = False) -> alt.Chart:
+    as_date=False) -> alt.Chart:
     """docstring"""
-    census = census.rename(columns=columns_comp)
-
+    
+    census = census.rename(columns={"hosp": "Hospital Census", 
+        "icu": "ICU Census", 
+        "vent": "Ventilated Census"})
+    
     tooltip_dict = {False: "day", True: "date:T"}
     if as_date:
-        census = add_date_column(census.head(plot_projection_days))
+        census = add_date_column(census)
         x_kwargs = {"shorthand": "date:T", "title": "Date"}
     else:
         x_kwargs = {"shorthand": "day", "title": "Days from initial infection"}
-
+    
     return (
         alt
-        .Chart(census)
-        .transform_fold(fold=fold_comp)
+        .Chart(census.head(plot_projection_days))
+        .transform_fold(fold=["Hospital Census", "ICU Census", "Ventilated Census"])
         .mark_line(point=False)
         .encode(
             x=alt.X(**x_kwargs),
             y=alt.Y("value:Q", title="Census"),
             color="key:N",
-            tooltip=[
-                tooltip_dict[as_date],
-                alt.Tooltip("value:Q", format=".0f", title="Census"),
-                "key:N",
-            ],
+            tooltip=["day", "key:N"]
         )
         .interactive()
     )
 
-#sir_ip_c = ip_census_chart(census_table, plot_projection_days, as_date=as_date)
-seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_date)
-#seir_r_ip_c = ip_census_chart(census_table_R, plot_projection_days, as_date=as_date)
-seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
-###
-# Added SEIR 10, 20 SD
-#seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
-#seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
+#SEIR w/ adjusted R_0 and deaths
+st.altair_chart(admitted_patients_chart(census_table_D, 
+    plot_projection_days, 
+    as_date=as_date),
+    use_container_width=True)
 
-st.altair_chart(
-    alt.layer(seir_d_ip_c.mark_line())
-    #+ alt.layer(graph_selection)
- #   +alt.layer(seir_ip_c.mark_line())
-    + alt.layer(vertical1)
-    , use_container_width=True)
+
+# Version with single line
+#sir_ip_c = ip_census_chart(census_table, plot_projection_days, as_date=as_date)
+#seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_date)
+#seir_r_ip_c = ip_census_chart(census_table_R, plot_projection_days, as_date=as_date)
+#seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
+###
+
+# Version with single line
+# st.altair_chart(
+    # alt.layer(seir_d_ip_c.mark_line())
+    # #+ alt.layer(graph_selection)
+ # #   +alt.layer(seir_ip_c.mark_line())
+    # + alt.layer(vertical1)
+    # , use_container_width=True)
 
 st.markdown(
     """This model shows the daily census for projected occupied hospital beds. """
@@ -1217,9 +1262,9 @@ st.markdown(
 
 
 #sir_ip_c = ip_census_chart(census_table, plot_projection_days, as_date=as_date)
-seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_date)
+#seir_ip_c = ip_census_chart(census_table_e, plot_projection_days, as_date=as_date)
 #seir_r_ip_c = ip_census_chart(census_table_R, plot_projection_days, as_date=as_date)
-seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
+#seir_d_ip_c = ip_census_chart(census_table_D, plot_projection_days, as_date=as_date)
 ###
 # Added SEIR 10, 20 SD
 #seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as_date)
