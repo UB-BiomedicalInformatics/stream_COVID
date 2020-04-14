@@ -346,6 +346,69 @@ def sim_seijcrd_decay(
         np.array(d_v)
     )
 
+# Less complicated
+
+def seijcrd2(
+    s: float, e: float, i: float, j:float, r: float, d: float, beta: float, gamma: float, alpha: float, n: float, fatal: float, fatal_hosp: float, hosp_rate:float,
+    hosp_day_rate:float, l:float
+    ) -> Tuple[float, float, float, float, float,float]:
+    """The SIR model, one time step."""
+    s_n = -beta*s*(i + (l*j)) +s
+    e_n = beta*s*(i + (l*j)) - alpha * e + e
+    i_n = alpha * e - (hosp_rate + gamma) * i + i 
+    j_n = hosp_rate * i - hosp_day_rate*j +j
+    r_n = gamma * (1-fatal)*i + ((1-fatal_hosp) * hosp_day_rate * j) +r
+    d_n = gamma * (fatal)*i + ((fatal_hosp)*hosp_day_rate*j) +d
+    if s_n < 0.0:
+        s_n = 0.0
+    if e_n < 0.0:
+        e_n = 0.0
+    if i_n < 0.0:
+        i_n = 0.0
+    if j_n < 0.0:
+        j_n = 0.0
+    if r_n < 0.0:
+        r_n = 0.0
+    if d_n < 0.0:
+        d_n = 0.0
+
+    scale = n / (s_n + e_n+ i_n + j_n+ r_n + d_n)
+    return s_n * scale, e_n * scale, i_n * scale, j_n* scale, r_n * scale, d_n * scale
+# 
+
+def sim_seijcrd_decay2(
+    s: float, e:float, i: float, j:float, r: float, d: float, beta: float, gamma: float, alpha: float, n_days: int,
+    decay2:float, decay3: float, fatal: float, fatal_hosp: float, hosp_rate: float, hosp_day_rate:float, l:float
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,np.ndarray, np.ndarray]:
+    """Simulate the SIR model forward in time."""
+    s, e, i, j, r, d= (float(v) for v in (s, e, i, j, r, d))
+    n = s + e + i + j+r + d
+    s_v, e_v, i_v, j_v, r_v, d_v = [s], [e], [i], [j], [r], [d]
+    for day in range(n_days):
+        if 0<=day<=21:
+            beta_decay=beta
+        elif 22<=day<=28:
+            beta_decay=beta*(1-decay2)
+        else: 
+            beta_decay=beta*(1-decay3)
+        s, e, i,j, r,d = seijcrd2(s, e, i,j, r, d, beta_decay, gamma, alpha, n, fatal, fatal_hosp, hosp_rate,hosp_day_rate, l)
+        s_v.append(s)
+        e_v.append(e)
+        i_v.append(i)
+        j_v.append(j)
+        r_v.append(r)
+        d_v.append(d)
+
+    return (
+        np.array(s_v),
+        np.array(e_v),
+        np.array(i_v),
+        np.array(j_v),
+        np.array(r_v),
+        np.array(d_v)
+    )
+ 
+
 # Add dates #
 def add_date_column(
     df: pd.DataFrame, drop_day_column: bool = False, date_format: Optional[str] = None,
@@ -409,12 +472,17 @@ ppe_severe_val_upper = 24
 groups = ['hosp', 'icu', 'vent']
 
 # Populations and Infections
-population = 1000000
+population = 1500000
 cases = 1000.0
 S_default = population
 known_infections = 1000.0
 known_cases = 120.0
 regional_hosp_share = 1.0
+
+
+import pandas as pd
+url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
+df = pd.read_csv(url, error_bad_lines=False)
 
 
 # Widgets
@@ -425,7 +493,7 @@ current_hosp = st.sidebar.number_input(
     "Total Hospitalized Cases", value=known_cases, step=1.0, format="%f")
 
 doubling_time = st.sidebar.number_input(
-    "Doubling Time (days)", value=4.0, step=1.0, format="%f")
+    "Doubling Time (days)", value=5.0, step=1.0, format="%f")
 
 start_date = st.sidebar.date_input(
     "Suspected first contact", datetime(2020,3,1))
@@ -449,7 +517,7 @@ intervention2 = st.sidebar.date_input(
 int2_delta = (intervention2 - start_date).days
 
 decay3 = st.sidebar.number_input(
-    "Social distancing (% reduction in social contact) from Week 3 to change in SD - After Business Closure%", 0, 100, value=30 ,step=5, format="%i")/100.0
+    "Social distancing (% reduction in social contact) from Week 3 to change in SD - After Business Closure%", 0, 100, value=40 ,step=5, format="%i")/100.0
 
 end_date = st.sidebar.date_input(
     "End date or change in social distancing", datetime(2020,5,15))
@@ -457,7 +525,7 @@ end_date = st.sidebar.date_input(
 end_delta = (end_date - start_date).days
 
 decay4 = st.sidebar.number_input(
-    "Social distancing after end date", 0, 100, value=60 ,step=5, format="%i")/100.0
+    "Social distancing after end date", 0, 100, value=20 ,step=5, format="%i")/100.0
 
 hosp_rate = (
     st.sidebar.number_input("Hospitalization %", 0.0, 100.0, value=2.5, step=0.50, format="%f")/ 100.0)
@@ -475,19 +543,22 @@ recovery_days =(
     st.sidebar.number_input("Recovery Period", 0.0, 21.0, value=14.0 ,step=0.1, format="%f"))
 
 infectious_period =(
-    st.sidebar.number_input("Infectious Period", 0.0, 18.0, value=14.0,step=0.1, format="%f"))
+    st.sidebar.number_input("Infectious Period", 0.0, 18.0, value=3.0,step=0.1, format="%f"))
 
 fatal = st.sidebar.number_input(
-    "Overall Fatality (%)", 0.0, 100.0, value=1.6 ,step=0.1, format="%f")/100.0
+    "Overall Fatality (%)", 0.0, 100.0, value=0.6 ,step=0.1, format="%f")/100.0
 
 fatal_hosp = st.sidebar.number_input(
     "Hospital Fatality (%)", 0.0, 100.0, value=4.0 ,step=0.1, format="%f")/100.0
 
-death_days = st.sidebar.number_input(
-    "Days person remains in critical care or dies", 0, 20, value=6,step=1, format="%f")
-
-crit_lag = st.sidebar.number_input(
-    "Days person takes to go to critical care", 0, 20, value=4 ,step=1, format="%f")
+##death_days = st.sidebar.number_input(
+##    "Days person remains in critical care or dies", 0, 20, value=6,step=1, format="%f")
+##
+##crit_lag = st.sidebar.number_input(
+##    "Days person takes to go to critical care", 0, 20, value=4 ,step=1, format="%f")
+##
+##R_0_j=(
+##    st.sidebar.number_input("R0", 0.0, 18.0, value=2.3,step=0.1, format="%f"))
 
 hosp_los = st.sidebar.number_input("Hospital Length of Stay", value=5, step=1, format="%i")
 icu_los = st.sidebar.number_input("ICU Length of Stay", value=9, step=1, format="%i")
@@ -549,11 +620,15 @@ beta4 = (
 # for SEIJRD
 gamma_hosp = 1 / hosp_los
 icu_days = 1 / icu_los
-
+gamma2=1/infectious_period
+l=0.8
+#beta5= R_0_j * ((1/((gamma2)+(alpha)))+((alpha/(+(alpha)))*(l/gamma_hosp)))**(-1)
+#beta5= R_0_j * ((1/(gamma2+alpha) )+ ((l/(gamma_hosp))*(alpha/ (gamma2+alpha))))**(-1)
+##beta5=(R_0_j * 1/((1/(gamma2+alpha)+alpha/(gamma2+alpha)*l/gamma_hosp)))/S
 st.title("COVID-19 Disease Model")
 
 
-# Slider and Date
+# Slider and Datealpha
 n_days = st.slider("Number of days to project", 30, 200, 120, 1, "%i")
 as_date = st.checkbox(label="Present result as dates", value=False)
 
@@ -629,7 +704,7 @@ gamma2=1/infectious_period
 exposed2=beta4*S*total_infections
 S2=S-exposed2-total_infections
 
-s_e, e_e, i_e, r_e = sim_seir(S-2, 1 ,1, recovered, beta3, gamma2, alpha, n_days)
+s_e, e_e, i_e, r_e = sim_seir(S-11, 1 ,10, recovered, beta3, gamma2, alpha, n_days)
 
 susceptible_e, exposed_e, infected_e, recovered_e = s_e, e_e, i_e, r_e
 
@@ -670,10 +745,37 @@ hospitalized_R, icu_R, ventilated_R = (
             i_ventilated_R)
 
 
-##################################################################
-## SEIR model with phase adjusted R_0 and Disease Related Fatality
+####################################################################
+#### SEIR model with phase adjusted R_0 and Disease Related Fatality
+##
+##s_D, e_D, i_D, r_D, d_D = sim_seird_decay(S-2, 1, 1 , 0.0, 0.0, beta4, gamma2,alpha, n_days, decay1, decay2, decay3, decay4, end_delta, fatal)
+##
+##susceptible_D, exposed_D, infected_D, recovered_D = s_D, e_D, i_D, r_D
+##
+##i_hospitalized_D, i_icu_D, i_ventilated_D = get_dispositions(i_D, rates, regional_hosp_share)
+##
+##r_hospitalized_D, r_icu_D, r_ventilated_D = get_dispositions(r_D, rates, regional_hosp_share)
+##
+##dispositions_D = (
+##            i_hospitalized_D + r_hospitalized_D,
+##            i_icu_D + r_icu_D,
+##            i_ventilated_D + r_ventilated_D)
+##
+##hospitalized_D, icu_D, ventilated_D = (
+##            i_hospitalized_D,
+##            i_icu_D,
+##            i_ventilated_D)
+##
+##
+### Projection days
+##plot_projection_days = n_days - 10
 
-s_D, e_D, i_D, r_D, d_D = sim_seird_decay(S-2, 1, 1 , 0.0, 0.0, beta4, gamma2,alpha, n_days, decay1, decay2, decay3, decay4, end_delta, fatal)
+
+
+##################################################################
+## SEIJR model with phase adjusted R_0 and Disease Related Fatality 
+
+s_D, e_D, i_D, r_D, d_D = sim_seird_decay(S-150, 100.0, 50.0 , 0.0, 0.0, beta4, gamma2,alpha, n_days, decay1, decay2, decay3, decay4, end_delta, fatal)
 
 susceptible_D, exposed_D, infected_D, recovered_D = s_D, e_D, i_D, r_D
 
@@ -695,6 +797,17 @@ hospitalized_D, icu_D, ventilated_D = (
 # Projection days
 plot_projection_days = n_days - 10
 
+###################################################################
+#### SEIJR model with phase adjusted R_0 and Disease Related Fatality
+##
+##hosp_day_rate=1/hosp_los
+##
+##s_H2, e_H2, i_H2, j_H2, r_H2, d_H2 = sim_seijcrd_decay2(S-2, 1.0, 1.0, 0.0, 0.0, 0.0, beta5, gamma2,alpha, n_days,decay2,decay3, fatal, fatal_hosp, hosp_day_rate, hosp_rate, l)
+##
+
+
+# Projection days
+plot_projection_days = n_days - 10
 
 #############
 # # SIR Model
@@ -744,6 +857,106 @@ if relative_contact_rate >= 0:
     projection_admits_e20 = build_admissions_df(dispositions_e)
     census_table_e20 = build_census_df(projection_admits_e20)
 
+## Confirmed cases graphs
+
+url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
+df = pd.read_csv(url)
+url2='https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+df2=pd.read_csv(url2)
+is_US=df2['Country/Region']=='US'
+df_US=df2[is_US]
+
+is_NY =  df['Province_State']=='New York'
+df_NY = df[is_NY]
+is_Erie = df_NY['Admin2']=='Erie'
+df_Erie = df_NY[is_Erie]
+list(df_NY.columns)
+df_NY = df_NY.drop(['UID','iso2','iso3','code3',
+ 'FIPS','Admin2','Country_Region', 'Province_State','Lat','Long_','Combined_Key','1/22/20','1/23/20','1/24/20','1/25/20','1/26/20','1/27/20',
+ '1/28/20','1/29/20','1/30/20','1/31/20','2/1/20','2/2/20','2/3/20','2/4/20','2/5/20','2/6/20','2/7/20',
+ '2/8/20','2/9/20','2/10/20','2/11/20','2/12/20','2/13/20','2/14/20','2/15/20','2/16/20','2/17/20','2/18/20',
+ '2/19/20','2/20/20','2/21/20','2/22/20','2/23/20','2/24/20','2/25/20','2/26/20', '2/27/20','2/28/20','2/29/20'], axis=1)
+df_NY_all=df_NY.agg([sum])
+
+df_Erie = df_Erie.drop(['UID','iso2','iso3','code3',
+ 'FIPS','Admin2', 'Lat','Long_','Combined_Key','Province_State','1/22/20','1/23/20','1/24/20','1/25/20','1/26/20','1/27/20',
+ '1/28/20','1/29/20','1/30/20','1/31/20','2/1/20','2/2/20','2/3/20','2/4/20','2/5/20','2/6/20','2/7/20',
+ '2/8/20','2/9/20','2/10/20','2/11/20','2/12/20','2/13/20','2/14/20','2/15/20','2/16/20','2/17/20','2/18/20',
+ '2/19/20','2/20/20','2/21/20','2/22/20','2/23/20','2/24/20','2/25/20','2/26/20', '2/27/20','2/28/20','2/29/20'], axis=1)
+
+list(df_US.columns)
+df_US = df_US.drop(['Province/State','Lat','Country/Region',
+ 'Long','1/22/20','1/23/20', '1/24/20','1/25/20','1/26/20','1/27/20','1/28/20', '1/29/20','1/30/20','1/31/20',
+ '2/1/20','2/2/20','2/3/20','2/4/20','2/5/20','2/6/20','2/7/20','2/8/20', '2/9/20','2/10/20','2/11/20','2/12/20','2/13/20','2/14/20',
+ '2/15/20','2/16/20', '2/17/20', '2/18/20', '2/19/20', '2/20/20', '2/21/20', '2/22/20', '2/23/20', '2/24/20', 
+'2/25/20', '2/26/20', '2/27/20','2/28/20','2/29/20'],axis=1)
+
+
+df_US['Region']='US'
+df_Erie['Region']='Erie'
+df_NY_all['Region']="NY"
+
+df_US2=pd.melt(df_US, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
+ '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
+ '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
+                        var_name='Date',value_name='US')
+
+df_NY2=pd.melt(df_NY_all, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
+ '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
+ '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
+                        var_name='Day2',value_name='NY')
+
+df_Erie2=pd.melt(df_Erie, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
+ '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
+ '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
+                        var_name='Day3',value_name='Erie')
+
+df_US2=df_US2.drop(['Region'], axis=1)
+df_NY2=df_NY2.drop(['Region'], axis=1)
+df_Erie2=df_Erie2.drop(['Region'], axis=1)
+
+result = pd.concat([df_US2, df_NY2, df_Erie2], axis=1, sort=False)
+result=result.drop(['Day2', 'Day3'],axis=1)
+result['Day'] = np.arange(len(result))
+result['US']=(result['US']/328000000)*100
+result['NY']=(result['NY']/19450000)*100
+result['Erie']=(result['Erie']/1500000)*100
+#st.dataframe(result)
+st.subheader("""Confirmed Cases for the US, New York, and Erie County""")
+# Erie Graph of Cases # Lines of cases
+def confirmed_chart(
+    result: pd.DataFrame) -> alt.Chart:
+    """docstring"""
+    
+    return(
+        alt
+        .Chart(result)
+        .transform_fold(fold=["US", 
+                                "NY", 
+                                "Erie",
+                                ])
+        .mark_line(strokeWidth=3, point=True)
+        .encode(
+            x=alt.X("Day", title="Date"),
+            y=alt.Y("value:Q", title="% Confirmed Cases Per Region Population"),
+            color="key:N",
+            tooltip=[alt.Tooltip("value:Q", format=".0f"),"key:N"]
+        )
+        .interactive()
+    )
+
+ # Bar chart of Erie cases with layer of HERDS DAta Erie
+st.altair_chart(confirmed_chart(result), use_container_width=True)
+
+st.markdown(
+    """This chart shows the percent daily [confirmed](https://coronavirus.jhu.edu/map.html) cases per region population. These numbers are highly influenced by testing rates and testing practices in each geographic location. """
+)
+#cols = [2,4]
+#result.drop(result.columns[cols],axis=1,inplace=True)
+st.header("""Model Projections""")
 # Admissions Graphs
 def regional_admissions_chart(
     projection_admits: pd.DataFrame, 
@@ -870,14 +1083,18 @@ vertical1 = vertical_chart(vertical, as_date=as_date)
 ##############################
 #4/3/20 First Projection Graph - Admissions
 #############
-st.subheader("Projected number of **daily** COVID-19 admissions: SEIR - Phase Adjusted R_0 with Case Fatality")
+st.subheader("Projected number of **daily** COVID-19 admissions")
 admits_graph = regional_admissions_chart(projection_admits_D, 
         plot_projection_days, 
         as_date=as_date)
 
 st.altair_chart(admits_graph + vertical1, use_container_width=True)
 
+st.markdown(
+    """This model shows the number of daily admissions projected for the chosen time period. """
+)
 
+#st.dataframe(projection_admits)
 if st.checkbox("Show more info about this tool"):
     st.subheader(
      "[Deterministic SEIR model](https://www.tandfonline.com/doi/full/10.1080/23737867.2018.1509026)")
@@ -894,8 +1111,16 @@ The epidemic proceeds via a growth and decline process. This is the core model o
     st.latex(r'''\frac{dd}{dt}=f \gamma I''')
 
     st.markdown(
-    """where $\gamma$ is $1/mean\ infectious\ rate$, $$\\alpha$$ is $1/mean\ incubation\ period$, $$\\rho$$ is the rate of social distancing at time $t$,
-and $$\\beta$$ is the rate of transmission.""")
+    """where $\gamma$ is $1/mean\ infectious\ rate$, $$f$$ is the fatality rate, $$\\alpha$$ is $1/mean\ incubation\ period$, $$\\rho$$ is one minus the rate of social distancing at time $t$,
+and $$\\beta$$ is the rate of transmission.
+
+Note that a number of assumptions are made with deterministic compartmental models. First, we are assuming a large, closed population with no births or deaths.
+Second, within the time period, immunity to the disease is acquired. Third, the susceptible and infected subpopulations are dispersed homogeneously in geographic space.
+In addition to the model assumptions noted here, the model is limited by uncertainty related to parameter choice.
+Parameters are measured independently from the model, which is hard to do in the midst of an outbreak.
+Early reports from other geographic locations have allowed us to estimate this model.
+However, parameters can be different depending on population characteristics and can vary over periods of the outbreak.
+Therefore, interpreting the results can be difficult. """)
 
 
 sir = regional_admissions_chart(projection_admits, plot_projection_days, as_date=as_date)
@@ -962,11 +1187,15 @@ seir_ip_c10 = ip_census_chart(census_table_e10, plot_projection_days, as_date=as
 seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as_date)
 
 st.altair_chart(
-    alt.layer(seir_ip_c.mark_line())
-    + alt.layer(seir_d_ip_c.mark_line())
+    alt.layer(seir_d_ip_c.mark_line())
     #+ alt.layer(graph_selection)
+ #   +alt.layer(seir_ip_c.mark_line())
     + alt.layer(vertical1)
     , use_container_width=True)
+
+st.markdown(
+    """This model shows the daily census for projected occupied hospital beds. """
+)
 
 ################# Add 0% 10% 20% SD graph of SEIR MODEL ###################
 
@@ -990,7 +1219,7 @@ seir_ip_c20 = ip_census_chart(census_table_e20, plot_projection_days, as_date=as
 ###########            PPE            ####################
 ##########################################################
 ##########################################################
-st.header("Projected PPE Needs")
+#st.header("Projected PPE Needs")
 def ppe_chart(
     census: pd.DataFrame,
     as_date:bool = False) -> alt.Chart:
@@ -1023,15 +1252,15 @@ def ppe_chart(
 
 # , scale=alt.Scale(domain=[0, 450000])
     
-# SEIR Model with adjusted R_0 with Case Fatality - PPE predictions
-st.subheader("Projected personal protective equipment needs for mild and severe cases of COVID-19: SEIR Model with Adjutes R_0 and Case Fatality")
-
-ppe_graph = ppe_chart(census_table_D, as_date=as_date)
-
-st.altair_chart(alt.layer(ppe_graph.mark_line()) + alt.layer(vertical1), use_container_width=True)
-
+### SEIR Model with adjusted R_0 with Case Fatality - PPE predictions
+##st.subheader("Projected personal protective equipment needs for mild and severe cases of COVID-19: SEIR Model with Adjutes R_0 and Case Fatality")
+##
+##ppe_graph = ppe_chart(census_table_D, as_date=as_date)
+##
+##st.altair_chart(alt.layer(ppe_graph.mark_line()) + alt.layer(vertical1), use_container_width=True)
+##
 # Recovered/Infected/Fatality table
-st.subheader("Infected,recovered,and fatal individuals in the **region** across time")
+st.header("Projected infected and fatal individuals in the region across time")
 
 def additional_projections_chart(i: np.ndarray, r: np.ndarray, d: np.ndarray) -> alt.Chart:
     dat = pd.DataFrame({"Infected": i, "Recovered": r, "Fatal":d})
@@ -1083,11 +1312,11 @@ st.markdown(
         total_fatalities=total_fatalities 
     ))
 
-st.markdown("""There is a projected number of **{infection_total_t:.0f}** infections due to COVID-19.""".format(
-        infection_total_t=infection_total_t
-    )
-            )
-AAA=beta4*(1/gamma2)*1500000
+##st.markdown("""There is a projected number of **{infection_total_t:.0f}** infections due to COVID-19.""".format(
+##        infection_total_t=infection_total_t
+##    )
+##            )
+AAA=beta4*(1/gamma2)*S
 R2=AAA*(1-decay2)
 R3=AAA*(1-decay3)
 R4=AAA*(1-decay4)
@@ -1101,6 +1330,31 @@ st.markdown("""The initial $R_0$ is **{AAA:.1f}** the $R_0$ after 2 weeks is **{
         doubling_time=doubling_time
     )
             )
+
+### Recovered/Infected/Hospitalized/Fatality table
+##st.header("Estimating Hospitalization within the model")
+##st.subheader("The number of infected,recovered, and fatal individuals in the region at any given moment")
+##
+##def additional_projections_chart(e:np.ndarray, i: np.ndarray, j: np.ndarray, d: np.ndarray) -> alt.Chart:
+##    dat = pd.DataFrame({"Exposed":e,"Infected": i, "Hospitalized":j, "Fatal":d})
+##
+##    return (
+##        alt
+##        .Chart(dat.reset_index())
+##        .transform_fold(fold=["Exposed","Infected", "Hospitalized", "Fatal"])
+##        .mark_line(point=False)
+##        .encode(
+##            x=alt.X("index", title="Days from today"),
+##            y=alt.Y("value:Q", title="Case Volume"),
+##            tooltip=["key:N", "value:Q"], 
+##            color="key:N"
+##        )
+##        .interactive()
+##    )
+##
+##st.altair_chart(additional_projections_chart(j_H2, e_H2, i_H2, d_H2), use_container_width=True)
+##
+##
 
 st.markdown("""The SEIR model and application were developed by the University at Buffalo's [Biomedical Informatics Department](http://medicine.buffalo.edu/departments/biomedical-informatics.html) with special help from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology and Environmental Health, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com) with [Peter Winkelstein](http://medicine.buffalo.edu/faculty/profile.html?ubit=pwink). 
             Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and fine-tunes the model.
