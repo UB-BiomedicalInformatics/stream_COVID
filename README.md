@@ -5,7 +5,7 @@ Building off of the core application from the [CHIME model](https://github.com/C
 
 Documentation of parameter choices and model choices can be found in the github Wiki.  For questions, please email [Gabe Anaya](ganaya@buffalo.edu) or [Sarah Mullin](sarahmul@buffalo.edu).  
 
-As a note, these models are constantly being changed and updated as more information from COVID-19 surfaces. The deterministic models presented here are highly reliant on assumptions and parameter choice.
+As a note, these models are constantly being changed and updated as more information about COVID-19 surfaces. The deterministic models presented here are highly reliant on assumptions and parameter choice.
 
 ## Acknowledgements
 
