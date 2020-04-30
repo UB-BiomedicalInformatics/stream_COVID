@@ -790,12 +790,11 @@ susceptible_D, exposed_D, infected_D, recovered_D = s_D, e_D, i_D, r_D
 i_hospitalized_D, i_icu_D, i_ventilated_D = get_dispositions(i_D, rates, regional_hosp_share)
 
 r_hospitalized_D, r_icu_D, r_ventilated_D = get_dispositions(r_D, rates, regional_hosp_share)
-d_hospitalized_D, d_icu_D, d_ventilated_D = get_dispositions(d_D, rates, regional_hosp_share)
 
 dispositions_D = (
-            i_hospitalized_D + r_hospitalized_D+d_hospitalized_D,
-            i_icu_D + r_icu_D+d_icu_D,
-            i_ventilated_D + r_ventilated_D+ d_icu_D)
+            i_hospitalized_D + r_hospitalized_D,
+            i_icu_D + r_icu_D,
+            i_ventilated_D + r_ventilated_D)
 
 hospitalized_D, icu_D, ventilated_D = (
             i_hospitalized_D,
@@ -805,38 +804,6 @@ hospitalized_D, icu_D, ventilated_D = (
 
 # Projection days
 plot_projection_days = n_days - 10
-
-SEIRD_max=max(hospitalized_D)
-
-########## no social distancing
-
-s_D2, e_D2, i_D2, r_D2, d_D2 = sim_seird_decay(S-150, 100.0, 50.0 , 0.0, 0.0, beta4, gamma2,alpha, n_days, 0, 0, 0, 0,
-                                               end_delta, fatal)
-
-susceptible_D2, exposed_D2, infected_D2, recovered_D2 = s_D2, e_D2, i_D2, r_D2
-
-i_hospitalized_D2, i_icu_D2, i_ventilated_D2 = get_dispositions(i_D2, rates, regional_hosp_share)
-
-r_hospitalized_D2, r_icu_D2, r_ventilated_D2 = get_dispositions(r_D2, rates, regional_hosp_share)
-
-d_hospitalized_D2,d_icu_D2,d_ventilated_D2 = get_dispositions(d_D2, rates, regional_hosp_share)
-dispositions_D2 = (
-            i_hospitalized_D2 + r_hospitalized_D2+d_hospitalized_D2,
-            i_icu_D2 + r_icu_D2+d_icu_D2,
-            i_ventilated_D2 + r_ventilated_D2, d_ventilated_D2)
-
-hospitalized_D2, icu_D2, ventilated_D2 = (
-            i_hospitalized_D2,
-            i_icu_D2,
-            i_ventilated_D2)
-
-SEIRDno_max=max(hospitalized_D2)
-
-Difference_admissions_height=SEIRDno_max-SEIRD_max
-
-
-
-
 
 ###################################################################
 #### SEIJR model with phase adjusted R_0 and Disease Related Fatality
@@ -874,13 +841,6 @@ census_table_R = build_census_df(projection_admits_R)
 projection_admits_D = build_admissions_df(dispositions_D)
 # Census Table
 census_table_D = build_census_df(projection_admits_D)
-
-#############
-# SEIR Model with phase adjustment and Disease Fatality NO SOCIAL DISTANCING
-# New cases
-projection_admits_D2 = build_admissions_df(dispositions_D2)
-# Census Table
-census_table_D2 = build_census_df(projection_admits_D2)
 
 
 ## Confirmed cases graphs
@@ -925,25 +885,19 @@ df_NY_all['Region']="NY"
 df_US2=pd.melt(df_US, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
  '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
  '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
- '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20', '4/14/20',
-                                                     '4/15/20','4/16/20','4/17/20','4/18/20','4/19/20','4/20/20','4/21/20',
-                                                     '4/22/20','4/23/20','4/24/20','4/25/20','4/26/20','4/27/20','4/28/20', '4/29/20'],
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
                         var_name='Date',value_name='US')
 
 df_NY2=pd.melt(df_NY_all, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
  '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
  '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
- '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20', '4/14/20',
-                                                     '4/15/20','4/16/20','4/17/20','4/18/20','4/19/20','4/20/20','4/21/20',
-                                                     '4/22/20','4/23/20','4/24/20','4/25/20','4/26/20','4/27/20','4/28/20', '4/29/20'],
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
                         var_name='Day2',value_name='NY')
 
 df_Erie2=pd.melt(df_Erie, id_vars=['Region'],value_vars=['3/1/20','3/2/20','3/3/20','3/4/20','3/5/20','3/6/20','3/7/20','3/8/20','3/9/20','3/10/20','3/11/20','3/12/20',
  '3/13/20','3/14/20','3/15/20','3/16/20','3/17/20','3/18/20','3/19/20','3/20/20','3/21/20','3/22/20',
  '3/23/20','3/24/20','3/25/20','3/26/20','3/27/20','3/28/20', '3/29/20', '3/30/20','3/31/20','4/1/20',
- '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20', '4/14/20',
-                                                     '4/15/20','4/16/20','4/17/20','4/18/20','4/19/20','4/20/20','4/21/20',
-                                                     '4/22/20','4/23/20','4/24/20','4/25/20','4/26/20','4/27/20','4/28/20', '4/29/20'],
+ '4/2/20','4/3/20','4/4/20','4/5/20','4/6/20','4/7/20','4/8/20', '4/9/20','4/10/20', '4/11/20','4/12/20', '4/13/20'],
                         var_name='Day3',value_name='Erie')
 
 df_US2=df_US2.drop(['Region'], axis=1)
@@ -1184,33 +1138,15 @@ sir = regional_admissions_chart(projection_admits, plot_projection_days, as_date
 seir = regional_admissions_chart(projection_admits_e, plot_projection_days, as_date=as_date)
 seir_r = regional_admissions_chart(projection_admits_R, plot_projection_days, as_date=as_date)
 seir_d = regional_admissions_chart(projection_admits_D, plot_projection_days, as_date=as_date)
-seir_d2 = regional_admissions_chart(projection_admits_D2, plot_projection_days, as_date=as_date)
-
-Max_hosp_admissions=max(projection_admits_D['hosp'].dropna())
-Max_hosp_admissions_nosoc=max(projection_admits_D2['hosp'].dropna())
-Max_diff=Max_hosp_admissions_nosoc-Max_hosp_admissions
 
 
-st.subheader("Projected number of **daily** COVID-19 admissions: Model Comparison (Left: 0% Social Distancing, Right: Step-Wise Social Distancing)")
-st.altair_chart(
-    alt.layer(seir_d2.mark_line())
-    + alt.layer(seir_d.mark_point())
-    + alt.layer(vertical1.mark_rule())
-    , use_container_width=True)
-
-st.markdown(
-    """In the above graph, the curves to the left (indicated by the solid lines) represent projections if government implemented
-social distancing (e.g. New York State on PAUSE) had not gone into effect. The second set of curves (denoted by points) represent projections with social distancing.
-The percent of social distancing can be chosen by the user."""
-    )
-
-st.markdown(
-    """Compared to a projection with no social distancing (letting the virus run it's natural course with no government shut-down),
-    there are **{Max_diff:.0f}** fewer admissions (daily hospitalizations) at the peak of the epidemic curve. Therefore,
-    we are flattening the curve.""".format(
-        Max_diff=Max_diff
-    ))
-
+if st.checkbox("Show Graph of Projected Admissions with Model Comparison of Social Distancing"):
+    st.subheader("Projected number of **daily** COVID-19 admissions: Model Comparison (Left: 0% Social Distancing, Right: Step-Wise Social Distancing)")
+    st.altair_chart(
+        alt.layer(seir.mark_line())
+        + alt.layer(seir_d.mark_line())
+        + alt.layer(vertical1.mark_rule())
+        , use_container_width=True)
 
 
 ################################################
@@ -1427,8 +1363,6 @@ st.markdown(
         total_fatalities=total_fatalities 
     ))
 
-
-
 ##st.markdown("""There is a projected number of **{infection_total_t:.0f}** infections due to COVID-19.""".format(
 ##        infection_total_t=infection_total_t
 ##    )
@@ -1448,8 +1382,6 @@ After reducing social distancing, the $R_e$ is **{R4:.1f}**.
         doubling_time=doubling_time
     )
             )
-
-
 
 ### Recovered/Infected/Hospitalized/Fatality table
 ##st.header("Estimating Hospitalization within the model")
@@ -1476,13 +1408,13 @@ After reducing social distancing, the $R_e$ is **{R4:.1f}**.
 ##
 ##
 
-st.subheader("Acknowledgments")
 st.markdown("""The SEIR model and application were developed by the University at Buffalo's Clinical Informatics lab in the
 [Department of Biomedical Informatics](http://medicine.buffalo.edu/departments/biomedical-informatics.html) (Gabriel Anaya, Sarah Mullin,
 Jinwei Hu, Brianne Mackenzie, Arlen Brickman, and [Peter Elkin](http://medicine.buffalo.edu/faculty/profile.html?ubit=elkinp)) with collaboration from [Matthew Bonner](http://sphhp.buffalo.edu/epidemiology-and-environmental-health/faculty-and-staff/faculty-directory/mrbonner.html) in the Department of Epidemiology and Environmental Health, [Greg Wilding](http://sphhp.buffalo.edu/biostatistics/faculty-and-staff/faculty-directory/gwilding.html) in the Department of Biostatistics, and [Great Lakes Healthcare](https://www.greatlakeshealth.com) with [Peter Winkelstein](http://medicine.buffalo.edu/faculty/profile.html?ubit=pwink). 
             Building off of the core application from the [CHIME model](https://github.com/CodeForPhilly/chime/), our model adds compartments for _Exposed_ and _Death_ and creates a step-wise social distancing adjusted model.
             Documentation of parameter choices and model choices can be found in the department github Wiki.  For questions, please email [Gabriel Anaya](ganaya@buffalo.edu) or [Sarah Mullin](sarahmul@buffalo.edu).  """)
 
-st.markdown(
+if st.checkbox("Acknowledgments"):
+     st.markdown(
     """This work has been supported in part by grants from NIH NLM T15LM012495, NIAA R21AA026954, and NCATS UL1TR001412. This study was funded in part by the Department of Veterans Affairs."""
 )
